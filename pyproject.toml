@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moera-tools"
+version = "0.1.0"
+authors = [
+    {name = "Shmuel Leib Melamud", email = "balu@moera.org"},
+]
+description = "Tools for Moera administrators"
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["Moera", "tools", "naming", "node", "administration", "provider"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: System Administrators",
+]
+dependencies = [
+    "requests"
+]
+
+[project.scripts]
+moname = "moname:moname"
+
+[project.urls]
+"Homepage" = "https://github.com/MoeraOrg/moera-tools"
+"Bug Tracker" = "https://github.com/MoeraOrg/moera-issues/issues"
+"Overview" = "https://moera.org"
