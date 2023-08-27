@@ -19,11 +19,12 @@ classifiers = [
     "Intended Audience :: System Administrators",
 ]
 dependencies = [
-    "requests"
+    "requests",
+    "camel-converter"
 ]
 
 [project.scripts]
-moname = "moname:moname"
+moname = "moname.moname:moname"
 
 [project.urls]
 "Homepage" = "https://github.com/MoeraOrg/moera-tools"
