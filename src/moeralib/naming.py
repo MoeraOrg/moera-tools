@@ -14,12 +14,13 @@ OperationStatus = Literal['WAITING', 'ADDED', 'STARTED', 'SUCCEEDED', 'FAILED', 
 
 class OperationStatusInfo(Structure):
     operationId: str
+    name: str
+    generation: int
     status: OperationStatus
     added: Timestamp | None
     completed: Timestamp | None
     error_code: str | None
     error_message: str | None
-    generation: int | None
 
 
 class RegisteredNameInfo(Structure):
@@ -27,6 +28,7 @@ class RegisteredNameInfo(Structure):
     generation: int
     updating_key: str
     node_uri: str
+    created: Timestamp | None
     signing_key: str | None
     valid_from: Timestamp | None
     digest: str
@@ -38,6 +40,12 @@ class MoeraNamingError(Exception):
         super().__init__('Naming server returned error: ' + message)
 
 
+class MoeraNamingConnectionError(Exception):
+
+    def __init__(self, message):
+        super().__init__('Naming server connection error: ' + message)
+
+
 class MoeraNaming:
     server: str
     call_id: int
@@ -47,21 +55,32 @@ class MoeraNaming:
         self.call_id = 0
 
     def call(self, method: str, *params: Any) -> Json | list[Json] | str | bool | None:
-        r = requests.post(
-            self.server,
-            json={
-                'method': method,
-                'params': params,
-                'jsonrpc': '2.0',
-                'id': self.call_id,
-            }
-        )
-        self.call_id += 1
-        if r.status_code not in [200, 201]:
-            result = r.json()
-            raise MoeraNamingError(result['message'])
+        try:
+            r = requests.post(
+                self.server,
+                json={
+                    'method': method,
+                    'params': params,
+                    'jsonrpc': '2.0',
+                    'id': self.call_id,
+                }
+            )
+            self.call_id += 1
 
-        return r.json()['result']
+            result = r.json()
+            if r.status_code not in [200, 201] or 'error' in result:
+                if 'error' in result and 'message' in result['error']:
+                    raise MoeraNamingError(result['error']['message'])
+                else:
+                    raise MoeraNamingError("Invalid server response: " + repr(result))
+            if 'result' not in result:
+                raise MoeraNamingError("Invalid server response: " + repr(result))
+
+            return result['result']
+        except requests.exceptions.InvalidJSONError as e:
+            raise MoeraNamingError("Invalid server response") from e
+        except requests.exceptions.RequestException as e:
+            raise MoeraNamingConnectionError(str(e)) from e
 
     def put(self, name: str, generation: int, updating_key: str | None = None, node_uri: str | None = None,
             signing_key: str | None = None, valid_from: Timestamp | None = None, previous_digest: str | None = None,

@@ -18,15 +18,15 @@ class Structure:
             return self.data[item]
 
 
-StructType = TypeVar(bound=Structure)
+StructType = TypeVar('StructType', bound=Structure)
 
 
-def structure_or_none(data: Json | None, struct_type: StructType) -> StructType | None:
+def structure_or_none(data: Json | None, struct_type: type[StructType]) -> StructType | None:
     if data is not None:
         return struct_type(data)
     else:
         return None
 
 
-def structure_list(data: list[Json], struct_type: StructType) -> list[StructType]:
+def structure_list(data: list[Json], struct_type: type[StructType]) -> list[StructType]:
     return list(map(lambda item: struct_type(item), data))
