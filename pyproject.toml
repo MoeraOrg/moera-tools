@@ -20,7 +20,8 @@ classifiers = [
 ]
 dependencies = [
     "requests",
-    "camel-converter"
+    "camel-converter",
+    "python-dateutil"
 ]
 
 [project.scripts]

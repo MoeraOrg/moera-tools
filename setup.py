@@ -6,5 +6,6 @@ setup(
     install_requires=[
         'requests',
         'camel-converter',
+        'python-dateutil',
     ],
 )

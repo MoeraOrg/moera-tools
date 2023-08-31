@@ -1,4 +1,4 @@
-from typing import Any, Literal
+from typing import Any, Literal, TypeAlias
 
 import requests
 
@@ -8,8 +8,8 @@ MAIN_SERVER = 'https://naming.moera.org/moera-naming'
 DEV_SERVER = 'https://naming-dev.moera.org/moera-naming'
 
 
-Timestamp = int
-OperationStatus = Literal['WAITING', 'ADDED', 'STARTED', 'SUCCEEDED', 'FAILED', 'UNKNOWN']
+Timestamp: TypeAlias = int
+OperationStatus: TypeAlias = Literal['WAITING', 'ADDED', 'STARTED', 'SUCCEEDED', 'FAILED', 'UNKNOWN']
 
 
 class OperationStatusInfo(Structure):
@@ -26,12 +26,17 @@ class OperationStatusInfo(Structure):
 class RegisteredNameInfo(Structure):
     name: str
     generation: int
-    updating_key: str
+    updating_key: bytes
     node_uri: str
     created: Timestamp | None
-    signing_key: str | None
+    signing_key: bytes | None
     valid_from: Timestamp | None
-    digest: str
+    digest: bytes
+
+
+class SigningKeyInfo(Structure):
+    key: bytes
+    valid_from: Timestamp
 
 
 class MoeraNamingError(Exception):
@@ -89,7 +94,7 @@ class MoeraNaming:
                          previous_digest, signature)
 
     def get_status(self, operation_id: str) -> OperationStatusInfo | None:
-        return structure_or_none(self.call('getCurrent', operation_id), OperationStatusInfo)
+        return structure_or_none(self.call('getStatus', operation_id), OperationStatusInfo)
 
     def get_current(self, name: str, generation: int) -> RegisteredNameInfo | None:
         return structure_or_none(self.call('getCurrent', name, generation), RegisteredNameInfo)
@@ -103,5 +108,11 @@ class MoeraNaming:
     def get_similar(self, name: str) -> RegisteredNameInfo | None:
         return structure_or_none(self.call('getSimilar', name), RegisteredNameInfo)
 
+    def get_all_keys(self, name: str, generation: int) -> list[SigningKeyInfo]:
+        return structure_list(self.call('getAllKeys', name, generation), SigningKeyInfo)
+
     def get_all(self, at: Timestamp, page: int, size: int) -> list[RegisteredNameInfo]:
         return structure_list(self.call('getAll', at, page, size), RegisteredNameInfo)
+
+    def get_all_newer(self, at: Timestamp, page: int, size: int) -> list[RegisteredNameInfo]:
+        return structure_list(self.call('getAllNewer', at, page, size), RegisteredNameInfo)
