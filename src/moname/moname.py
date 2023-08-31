@@ -169,5 +169,5 @@ def moname():
             scan()
     except (MoeraNamingConnectionError, MoeraNamingError) as e:
         error(str(e))
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, BrokenPipeError):
         pass
