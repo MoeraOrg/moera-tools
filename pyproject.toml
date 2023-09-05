@@ -19,7 +19,7 @@ classifiers = [
     "Intended Audience :: System Administrators",
 ]
 dependencies = [
-    "requests",
+    "requests>=2.31.0",
     "camel-converter",
     "python-dateutil"
 ]
