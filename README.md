@@ -2,7 +2,7 @@
 Command-line tools for Moera administrators.
 
 ## moname
-`moname` utility is used to get information about names from the Moera naming
+`moname` is a utility to get information about names from the Moera naming
 server.
 
 You can always run `moname -h` to get the list of all available options, their
