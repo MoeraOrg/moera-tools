@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "moera-tools"
-version = "0.1.0"
+version = "0.2.0"
 authors = [
     {name = "Shmuel Leib Melamud", email = "balu@moera.org"},
 ]
@@ -21,7 +21,8 @@ classifiers = [
 dependencies = [
     "requests>=2.31.0",
     "camel-converter",
-    "python-dateutil"
+    "python-dateutil",
+    "jsonschema>=4.19.0"
 ]
 
 [project.scripts]
