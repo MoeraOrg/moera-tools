@@ -71,7 +71,7 @@ def parse_args() -> None:
                 try:
                     args.generation = int(gen)
                 except ValueError:
-                    error('invalid generation: "%d"' % gen)
+                    error('invalid generation: "%s"' % gen)
             else:
                 args.generation = 0
         else:

@@ -1,4 +1,4 @@
-from typing import Any, Literal, TypeAlias, Mapping
+from typing import Any, Literal, TypeAlias, Mapping, cast
 
 import requests
 from jsonschema import validate
@@ -189,38 +189,38 @@ class MoeraNaming:
     def put(self, name: str, generation: int, updating_key: str | None = None, node_uri: str | None = None,
             signing_key: str | None = None, valid_from: Timestamp | None = None, previous_digest: str | None = None,
             signature: str | None = None) -> str:
-        return self.call('put', [name, generation, updating_key, node_uri, signing_key, valid_from,
-                         previous_digest, signature])
+        return cast(str, self.call('put', [name, generation, updating_key, node_uri, signing_key, valid_from,
+                                           previous_digest, signature]))
 
     def get_status(self, operation_id: str) -> OperationStatusInfo | None:
-        return structure_or_none(self.call('getStatus', [operation_id], OPERATION_STATUS_INFO_SCHEMA),
+        return structure_or_none(cast(Json, self.call('getStatus', [operation_id], OPERATION_STATUS_INFO_SCHEMA)),
                                  OperationStatusInfo)
 
     def get_current(self, name: str, generation: int) -> RegisteredNameInfo | None:
-        return structure_or_none(self.call('getCurrent', [name, generation], REGISTERED_NAME_INFO_SCHEMA),
+        return structure_or_none(cast(Json, self.call('getCurrent', [name, generation], REGISTERED_NAME_INFO_SCHEMA)),
                                  RegisteredNameInfo)
 
     def get_past(self, name: str, generation: int, at: Timestamp) -> RegisteredNameInfo | None:
-        return structure_or_none(self.call('getPast', [name, generation, at],
-                                           REGISTERED_NAME_INFO_SCHEMA),
+        return structure_or_none(cast(Json, self.call('getPast', [name, generation, at], REGISTERED_NAME_INFO_SCHEMA)),
                                  RegisteredNameInfo)
 
     def is_free(self, name: str, generation: int) -> bool:
-        return self.call('isFree', [name, generation])
+        return cast(bool, self.call('isFree', [name, generation]))
 
     def get_similar(self, name: str) -> RegisteredNameInfo | None:
-        return structure_or_none(self.call('getSimilar', [name], REGISTERED_NAME_INFO_SCHEMA),
+        return structure_or_none(cast(Json, self.call('getSimilar', [name], REGISTERED_NAME_INFO_SCHEMA)),
                                  RegisteredNameInfo)
 
     def get_all_keys(self, name: str, generation: int) -> list[SigningKeyInfo]:
-        return structure_list(self.call('getAllKeys', [name, generation], SIGNING_KEY_INFO_LIST_SCHEMA),
+        return structure_list(cast(list[Json], self.call('getAllKeys', [name, generation],
+                                                         SIGNING_KEY_INFO_LIST_SCHEMA)),
                               SigningKeyInfo)
 
     def get_all(self, at: Timestamp, page: int, size: int) -> list[RegisteredNameInfo]:
-        return structure_list(self.call('getAll', [at, page, size], REGISTERED_NAME_INFO_LIST_SCHEMA),
+        return structure_list(cast(list[Json], self.call('getAll', [at, page, size], REGISTERED_NAME_INFO_LIST_SCHEMA)),
                               RegisteredNameInfo)
 
     def get_all_newer(self, at: Timestamp, page: int, size: int) -> list[RegisteredNameInfo]:
-        return structure_list(self.call('getAllNewer', [at, page, size],
-                                        REGISTERED_NAME_INFO_LIST_SCHEMA),
+        return structure_list(cast(list[Json], self.call('getAllNewer', [at, page, size],
+                                                         REGISTERED_NAME_INFO_LIST_SCHEMA)),
                               RegisteredNameInfo)
