@@ -125,7 +125,7 @@ def print_key(info: SigningKeyInfo) -> None:
     print("valid from   : %s" % timestamp_to_str(info.valid_from))
 
 
-def resolve():
+def resolve() -> None:
     srv = naming.MoeraNaming(args.server)
     if args.at is None:
         info = srv.get_current(args.name, args.generation)
@@ -144,7 +144,7 @@ def resolve():
             print_key(key)
 
 
-def scan():
+def scan() -> None:
     srv = naming.MoeraNaming(args.server)
     page = 0
     at = args.at if args.at is not None else int(time())
@@ -160,7 +160,7 @@ def scan():
         page += 1
 
 
-def moname():
+def moname() -> None:
     try:
         parse_args()
         if not args.list:
