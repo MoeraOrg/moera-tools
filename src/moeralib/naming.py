@@ -23,10 +23,10 @@ class OperationStatusInfo(Structure):
     name: str
     generation: int
     status: OperationStatus
-    added: Timestamp | None
-    completed: Timestamp | None
-    error_code: str | None
-    error_message: str | None
+    added: Timestamp | None = None
+    completed: Timestamp | None = None
+    error_code: str | None = None
+    error_message: str | None = None
 
 
 OPERATION_STATUS_INFO_SCHEMA = {
@@ -63,12 +63,12 @@ OPERATION_STATUS_INFO_SCHEMA = {
 class RegisteredNameInfo(Structure):
     name: str
     generation: int
-    updating_key: bytes
+    updating_key: bytes | None = None
     node_uri: str
-    created: Timestamp | None
-    signing_key: bytes | None
-    valid_from: Timestamp | None
-    digest: bytes
+    created: Timestamp | None = None
+    signing_key: bytes | None = None
+    valid_from: Timestamp | None = None
+    digest: bytes | None = None
 
 
 REGISTERED_NAME_INFO_SCHEMA = {
@@ -81,7 +81,7 @@ REGISTERED_NAME_INFO_SCHEMA = {
             "type": "number"
         },
         "updatingKey": {
-            "type": "string"
+            "type": ["string", "null"]
         },
         "nodeUri": {
             "type": "string"
@@ -96,10 +96,10 @@ REGISTERED_NAME_INFO_SCHEMA = {
             "type": ["number", "null"]
         },
         "digest": {
-            "type": "string"
+            "type": ["string", "null"]
         }
     },
-    "required": ["name", "generation", "updatingKey", "nodeUri", "digest"]
+    "required": ["name", "generation", "nodeUri"]
 }
 
 REGISTERED_NAME_INFO_LIST_SCHEMA = {
@@ -136,7 +136,7 @@ SIGNING_KEY_INFO_LIST_SCHEMA = {
 class MoeraNamingError(Exception):
 
     def __init__(self, method, message):
-        super().__init__(method + ': Naming server returned error: ' + message)
+        super().__init__(method + ': Naming server error: ' + message)
 
 
 class MoeraNamingConnectionError(Exception):
@@ -167,18 +167,19 @@ class MoeraNaming:
             )
             self.call_id += 1
 
-            result = r.json()
-            if r.status_code not in [200, 201] or 'error' in result:
-                if 'error' in result and 'message' in result['error']:
-                    raise MoeraNamingError(method, result['error']['message'])
+            response = r.json()
+            if r.status_code not in [200, 201] or 'error' in response:
+                if 'error' in response and 'message' in response['error']:
+                    raise MoeraNamingError(method, response['error']['message'])
                 else:
-                    raise MoeraNamingError(method, "Invalid server response: " + repr(result))
-            if 'result' not in result:
-                raise MoeraNamingError(method, "Invalid server response: " + repr(result))
-            if schema is not None:
-                validate(result['result'], schema=schema)
+                    raise MoeraNamingError(method, "Invalid server response: " + repr(response))
+            if 'result' not in response:
+                raise MoeraNamingError(method, "Invalid server response: " + repr(response))
+            result = response['result']
+            if schema is not None and result is not None:
+                validate(result, schema=schema)
 
-            return result['result']
+            return result
         except requests.exceptions.InvalidJSONError as e:
             raise MoeraNamingError(method, "Invalid server response") from e
         except requests.exceptions.RequestException as e:

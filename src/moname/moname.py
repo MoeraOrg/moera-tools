@@ -102,8 +102,10 @@ def print_info(info: RegisteredNameInfo) -> None:
         print("name         : %s" % info.name)
         print("generation   : %d" % info.generation)
         print("node URI     : %s" % info.node_uri)
-        print("digest       : %s" % info.digest.hex())
-        print("updating key : %s" % info.updating_key.hex())
+        if info.digest is not None:
+            print("digest       : %s" % info.digest.hex())
+        if info.updating_key is not None:
+            print("updating key : %s" % info.updating_key.hex())
         if info.created is not None:
             print("created      : %s" % timestamp_to_str(info.created))
         if args.keys is False:
