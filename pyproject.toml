@@ -27,6 +27,7 @@ dependencies = [
 
 [project.scripts]
 moname = "moname.moname:moname"
+moctl = "moctl.moctl:moctl"
 
 [project.urls]
 "Homepage" = "https://github.com/MoeraOrg/moera-tools"

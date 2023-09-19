@@ -2,6 +2,8 @@
 
 from typing import Any
 
+from moeralib.structure import to_nullable_object_schema, array_schema
+
 COMMENT_OPERATIONS_SCHEMA: Any = {
     "type": "object",
     "properties": {
@@ -364,10 +366,7 @@ AVATAR_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-AVATAR_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": AVATAR_INFO_SCHEMA
-}
+AVATAR_INFO_ARRAY_SCHEMA = array_schema(AVATAR_INFO_SCHEMA)
 
 AVATAR_ORDINAL_SCHEMA: Any = {
     "type": "object",
@@ -386,10 +385,7 @@ AVATAR_ORDINAL_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-AVATAR_ORDINAL_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": AVATAR_ORDINAL_SCHEMA
-}
+AVATAR_ORDINAL_ARRAY_SCHEMA = array_schema(AVATAR_ORDINAL_SCHEMA)
 
 BLOCKED_INSTANT_INFO_SCHEMA: Any = {
     "type": "object",
@@ -427,10 +423,7 @@ BLOCKED_INSTANT_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-BLOCKED_INSTANT_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": BLOCKED_INSTANT_INFO_SCHEMA
-}
+BLOCKED_INSTANT_INFO_ARRAY_SCHEMA = array_schema(BLOCKED_INSTANT_INFO_SCHEMA)
 
 BLOCKED_POSTING_INSTANT_INFO_SCHEMA: Any = {
     "type": "object",
@@ -565,9 +558,7 @@ CONTACT_INFO_SCHEMA: Any = {
         "gender": {
             "type": ["string", "null"]
         },
-        "avatar": {
-            AVATAR_IMAGE_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "avatar": to_nullable_object_schema(AVATAR_IMAGE_SCHEMA),
         "closeness": {
             "type": "number"
         },
@@ -589,15 +580,9 @@ CONTACT_INFO_SCHEMA: Any = {
         "hasBlockBy": {
             "type": ["boolean", "null"]
         },
-        "operations": {
-            CONTACT_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "ownerOperations": {
-            CONTACT_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "adminOperations": {
-            CONTACT_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(CONTACT_OPERATIONS_SCHEMA),
+        "ownerOperations": to_nullable_object_schema(CONTACT_OPERATIONS_SCHEMA),
+        "adminOperations": to_nullable_object_schema(CONTACT_OPERATIONS_SCHEMA),
     },
     "required": [
         "nodeName",
@@ -606,10 +591,7 @@ CONTACT_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-CONTACT_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": CONTACT_INFO_SCHEMA
-}
+CONTACT_INFO_ARRAY_SCHEMA = array_schema(CONTACT_INFO_SCHEMA)
 
 CREDENTIALS_CREATED_SCHEMA: Any = {
     "type": "object",
@@ -658,10 +640,7 @@ DOMAIN_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-DOMAIN_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": DOMAIN_INFO_SCHEMA
-}
+DOMAIN_INFO_ARRAY_SCHEMA = array_schema(DOMAIN_INFO_SCHEMA)
 
 EMAIL_HINT_SCHEMA: Any = {
     "type": "object",
@@ -694,9 +673,7 @@ FEED_REFERENCE_SCHEMA: Any = {
         "storyId": {
             "type": "string"
         },
-        "operations": {
-            STORY_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(STORY_OPERATIONS_SCHEMA),
     },
     "required": [
         "feedName",
@@ -772,9 +749,7 @@ FRIEND_GROUP_DETAILS_SCHEMA: Any = {
         "addedAt": {
             "type": "integer"
         },
-        "operations": {
-            FRIEND_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(FRIEND_OPERATIONS_SCHEMA),
     },
     "required": [
         "id",
@@ -795,9 +770,7 @@ FRIEND_GROUP_INFO_SCHEMA: Any = {
         "createdAt": {
             "type": "integer"
         },
-        "operations": {
-            FRIEND_GROUP_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(FRIEND_GROUP_OPERATIONS_SCHEMA),
     },
     "required": [
         "id",
@@ -806,10 +779,7 @@ FRIEND_GROUP_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-FRIEND_GROUP_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": FRIEND_GROUP_INFO_SCHEMA
-}
+FRIEND_GROUP_INFO_ARRAY_SCHEMA = array_schema(FRIEND_GROUP_INFO_SCHEMA)
 
 FRIEND_GROUPS_FEATURES_SCHEMA: Any = {
     "type": "object",
@@ -835,9 +805,7 @@ FRIEND_INFO_SCHEMA: Any = {
         "nodeName": {
             "type": "string"
         },
-        "contact": {
-            CONTACT_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "contact": to_nullable_object_schema(CONTACT_INFO_SCHEMA),
         "groups": {
             "type": ["array", "null"],
             "items": FRIEND_GROUP_DETAILS_SCHEMA
@@ -849,10 +817,7 @@ FRIEND_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-FRIEND_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": FRIEND_INFO_SCHEMA
-}
+FRIEND_INFO_ARRAY_SCHEMA = array_schema(FRIEND_INFO_SCHEMA)
 
 FRIEND_OF_INFO_SCHEMA: Any = {
     "type": "object",
@@ -860,9 +825,7 @@ FRIEND_OF_INFO_SCHEMA: Any = {
         "remoteNodeName": {
             "type": "string"
         },
-        "contact": {
-            CONTACT_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "contact": to_nullable_object_schema(CONTACT_INFO_SCHEMA),
         "groups": {
             "type": ["array", "null"],
             "items": FRIEND_GROUP_DETAILS_SCHEMA
@@ -874,10 +837,7 @@ FRIEND_OF_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-FRIEND_OF_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": FRIEND_OF_INFO_SCHEMA
-}
+FRIEND_OF_INFO_ARRAY_SCHEMA = array_schema(FRIEND_OF_INFO_SCHEMA)
 
 FUNDRAISER_INFO_SCHEMA: Any = {
     "type": "object",
@@ -987,9 +947,7 @@ NODE_NAME_INFO_SCHEMA: Any = {
         "operationErrorMessage": {
             "type": ["string", "null"]
         },
-        "operations": {
-            NODE_NAME_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(NODE_NAME_OPERATIONS_SCHEMA),
     },
     "additionalProperties": False
 }
@@ -1020,9 +978,7 @@ PEOPLE_GENERAL_INFO_SCHEMA: Any = {
         "blockedByTotal": {
             "type": ["integer", "null"]
         },
-        "operations": {
-            PEOPLE_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(PEOPLE_OPERATIONS_SCHEMA),
     },
     "additionalProperties": False
 }
@@ -1078,9 +1034,7 @@ POSTING_SOURCE_INFO_SCHEMA: Any = {
         "fullName": {
             "type": ["string", "null"]
         },
-        "avatar": {
-            AVATAR_IMAGE_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "avatar": to_nullable_object_schema(AVATAR_IMAGE_SCHEMA),
         "feedName": {
             "type": "string"
         },
@@ -1134,9 +1088,7 @@ PRIVATE_MEDIA_FILE_INFO_SCHEMA: Any = {
             "type": ["array", "null"],
             "items": MEDIA_FILE_PREVIEW_INFO_SCHEMA
         },
-        "operations": {
-            PRIVATE_MEDIA_FILE_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(PRIVATE_MEDIA_FILE_OPERATIONS_SCHEMA),
     },
     "required": [
         "id",
@@ -1172,16 +1124,12 @@ PROFILE_INFO_SCHEMA: Any = {
         "bioHtml": {
             "type": ["string", "null"]
         },
-        "avatar": {
-            AVATAR_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "avatar": to_nullable_object_schema(AVATAR_INFO_SCHEMA),
         "fundraisers": {
             "type": ["array", "null"],
             "items": FUNDRAISER_INFO_SCHEMA
         },
-        "operations": {
-            PROFILE_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(PROFILE_OPERATIONS_SCHEMA),
     },
     "additionalProperties": False
 }
@@ -1228,9 +1176,7 @@ REACTION_INFO_SCHEMA: Any = {
         "ownerGender": {
             "type": ["string", "null"]
         },
-        "ownerAvatar": {
-            AVATAR_IMAGE_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "ownerAvatar": to_nullable_object_schema(AVATAR_IMAGE_SCHEMA),
         "postingId": {
             "type": ["string", "null"]
         },
@@ -1264,26 +1210,15 @@ REACTION_INFO_SCHEMA: Any = {
         "signatureVersion": {
             "type": ["integer", "null"]
         },
-        "operations": {
-            REACTION_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "ownerOperations": {
-            REACTION_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "seniorOperations": {
-            REACTION_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "majorOperations": {
-            REACTION_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(REACTION_OPERATIONS_SCHEMA),
+        "ownerOperations": to_nullable_object_schema(REACTION_OPERATIONS_SCHEMA),
+        "seniorOperations": to_nullable_object_schema(REACTION_OPERATIONS_SCHEMA),
+        "majorOperations": to_nullable_object_schema(REACTION_OPERATIONS_SCHEMA),
     },
     "additionalProperties": False
 }
 
-REACTION_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": REACTION_INFO_SCHEMA
-}
+REACTION_INFO_ARRAY_SCHEMA = array_schema(REACTION_INFO_SCHEMA)
 
 REACTIONS_SLICE_INFO_SCHEMA: Any = {
     "type": "object",
@@ -1353,10 +1288,7 @@ REACTION_TOTALS_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-REACTION_TOTALS_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": REACTION_TOTALS_INFO_SCHEMA
-}
+REACTION_TOTALS_INFO_ARRAY_SCHEMA = array_schema(REACTION_TOTALS_INFO_SCHEMA)
 
 REGISTERED_NAME_SECRET_SCHEMA: Any = {
     "type": "object",
@@ -1486,9 +1418,7 @@ REPLIED_TO_SCHEMA: Any = {
         "gender": {
             "type": ["string", "null"]
         },
-        "avatar": {
-            AVATAR_IMAGE_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "avatar": to_nullable_object_schema(AVATAR_IMAGE_SCHEMA),
         "heading": {
             "type": ["string", "null"]
         },
@@ -1549,10 +1479,7 @@ SETTING_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-SETTING_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": SETTING_INFO_SCHEMA
-}
+SETTING_INFO_ARRAY_SCHEMA = array_schema(SETTING_INFO_SCHEMA)
 
 SETTING_TYPE_MODIFIERS_SCHEMA: Any = {
     "type": "object",
@@ -1718,9 +1645,7 @@ SHERIFF_COMPLAIN_INFO_SCHEMA: Any = {
         "ownerGender": {
             "type": ["string", "null"]
         },
-        "group": {
-            SHERIFF_COMPLAIN_GROUP_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "group": to_nullable_object_schema(SHERIFF_COMPLAIN_GROUP_INFO_SCHEMA),
         "reasonCode": {
             "type": "string"
         },
@@ -1743,10 +1668,7 @@ SHERIFF_COMPLAIN_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-SHERIFF_COMPLAIN_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": SHERIFF_COMPLAIN_INFO_SCHEMA
-}
+SHERIFF_COMPLAIN_INFO_ARRAY_SCHEMA = array_schema(SHERIFF_COMPLAIN_INFO_SCHEMA)
 
 SHERIFF_ORDER_INFO_SCHEMA: Any = {
     "type": "object",
@@ -1973,21 +1895,13 @@ SUBSCRIBER_INFO_SCHEMA: Any = {
         "nodeName": {
             "type": "string"
         },
-        "contact": {
-            CONTACT_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "contact": to_nullable_object_schema(CONTACT_INFO_SCHEMA),
         "createdAt": {
             "type": "integer"
         },
-        "operations": {
-            SUBSCRIBER_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "ownerOperations": {
-            SUBSCRIBER_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "adminOperations": {
-            SUBSCRIBER_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(SUBSCRIBER_OPERATIONS_SCHEMA),
+        "ownerOperations": to_nullable_object_schema(SUBSCRIBER_OPERATIONS_SCHEMA),
+        "adminOperations": to_nullable_object_schema(SUBSCRIBER_OPERATIONS_SCHEMA),
     },
     "required": [
         "id",
@@ -1998,10 +1912,7 @@ SUBSCRIBER_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-SUBSCRIBER_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": SUBSCRIBER_INFO_SCHEMA
-}
+SUBSCRIBER_INFO_ARRAY_SCHEMA = array_schema(SUBSCRIBER_INFO_SCHEMA)
 
 SUBSCRIPTION_INFO_SCHEMA: Any = {
     "type": "object",
@@ -2018,9 +1929,7 @@ SUBSCRIPTION_INFO_SCHEMA: Any = {
         "remoteNodeName": {
             "type": "string"
         },
-        "contact": {
-            CONTACT_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "contact": to_nullable_object_schema(CONTACT_INFO_SCHEMA),
         "remoteFeedName": {
             "type": ["string", "null"]
         },
@@ -2033,9 +1942,7 @@ SUBSCRIPTION_INFO_SCHEMA: Any = {
         "reason": {
             "type": "string"
         },
-        "operations": {
-            SUBSCRIPTION_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(SUBSCRIPTION_OPERATIONS_SCHEMA),
     },
     "required": [
         "id",
@@ -2047,10 +1954,7 @@ SUBSCRIPTION_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-SUBSCRIPTION_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": SUBSCRIPTION_INFO_SCHEMA
-}
+SUBSCRIPTION_INFO_ARRAY_SCHEMA = array_schema(SUBSCRIPTION_INFO_SCHEMA)
 
 TOKEN_INFO_SCHEMA: Any = {
     "type": "object",
@@ -2097,10 +2001,7 @@ TOKEN_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-TOKEN_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": TOKEN_INFO_SCHEMA
-}
+TOKEN_INFO_ARRAY_SCHEMA = array_schema(TOKEN_INFO_SCHEMA)
 
 UPDATE_INFO_SCHEMA: Any = {
     "type": "object",
@@ -2209,9 +2110,7 @@ WHO_AM_I_SCHEMA: Any = {
         "title": {
             "type": ["string", "null"]
         },
-        "avatar": {
-            AVATAR_IMAGE_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "avatar": to_nullable_object_schema(AVATAR_IMAGE_SCHEMA),
     },
     "additionalProperties": False
 }
@@ -2225,9 +2124,7 @@ ACTIVITY_REACTION_INFO_SCHEMA: Any = {
         "remoteFullName": {
             "type": ["string", "null"]
         },
-        "remoteAvatar": {
-            AVATAR_IMAGE_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "remoteAvatar": to_nullable_object_schema(AVATAR_IMAGE_SCHEMA),
         "remotePostingId": {
             "type": "string"
         },
@@ -2251,10 +2148,7 @@ ACTIVITY_REACTION_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-ACTIVITY_REACTION_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": ACTIVITY_REACTION_INFO_SCHEMA
-}
+ACTIVITY_REACTION_INFO_ARRAY_SCHEMA = array_schema(ACTIVITY_REACTION_INFO_SCHEMA)
 
 BLOCKED_BY_USER_INFO_SCHEMA: Any = {
     "type": "object",
@@ -2265,9 +2159,7 @@ BLOCKED_BY_USER_INFO_SCHEMA: Any = {
         "blockedOperation": {
             "type": "string"
         },
-        "contact": {
-            CONTACT_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "contact": to_nullable_object_schema(CONTACT_INFO_SCHEMA),
         "nodeName": {
             "type": "string"
         },
@@ -2293,10 +2185,7 @@ BLOCKED_BY_USER_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-BLOCKED_BY_USER_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": BLOCKED_BY_USER_INFO_SCHEMA
-}
+BLOCKED_BY_USER_INFO_ARRAY_SCHEMA = array_schema(BLOCKED_BY_USER_INFO_SCHEMA)
 
 BLOCKED_USER_INFO_SCHEMA: Any = {
     "type": "object",
@@ -2310,9 +2199,7 @@ BLOCKED_USER_INFO_SCHEMA: Any = {
         "nodeName": {
             "type": "string"
         },
-        "contact": {
-            CONTACT_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "contact": to_nullable_object_schema(CONTACT_INFO_SCHEMA),
         "entryId": {
             "type": ["string", "null"]
         },
@@ -2347,10 +2234,7 @@ BLOCKED_USER_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-BLOCKED_USER_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": BLOCKED_USER_INFO_SCHEMA
-}
+BLOCKED_USER_INFO_ARRAY_SCHEMA = array_schema(BLOCKED_USER_INFO_SCHEMA)
 
 BODY_SCHEMA: Any = {
     "type": "object",
@@ -2414,12 +2298,8 @@ COMMENT_REVISION_INFO_SCHEMA: Any = {
         "signatureVersion": {
             "type": ["integer", "null"]
         },
-        "clientReaction": {
-            CLIENT_REACTION_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "reactions": {
-            REACTION_TOTALS_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "clientReaction": to_nullable_object_schema(CLIENT_REACTION_INFO_SCHEMA),
+        "reactions": to_nullable_object_schema(REACTION_TOTALS_INFO_SCHEMA),
     },
     "required": [
         "id",
@@ -2433,10 +2313,7 @@ COMMENT_REVISION_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-COMMENT_REVISION_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": COMMENT_REVISION_INFO_SCHEMA
-}
+COMMENT_REVISION_INFO_ARRAY_SCHEMA = array_schema(COMMENT_REVISION_INFO_SCHEMA)
 
 FEATURES_SCHEMA: Any = {
     "type": "object",
@@ -2451,9 +2328,7 @@ FEATURES_SCHEMA: Any = {
         "feedWidth": {
             "type": "integer"
         },
-        "friendGroups": {
-            FRIEND_GROUPS_FEATURES_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "friendGroups": to_nullable_object_schema(FRIEND_GROUPS_FEATURES_SCHEMA),
         "ask": {
             "type": ["array", "null"],
             "items": {
@@ -2489,9 +2364,7 @@ FEED_INFO_SCHEMA: Any = {
         "lastCreatedAt": {
             "type": ["integer", "null"]
         },
-        "operations": {
-            FEED_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(FEED_OPERATIONS_SCHEMA),
         "sheriffs": {
             "type": ["array", "null"],
             "items": {
@@ -2510,20 +2383,13 @@ FEED_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-FEED_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": FEED_INFO_SCHEMA
-}
+FEED_INFO_ARRAY_SCHEMA = array_schema(FEED_INFO_SCHEMA)
 
 MEDIA_ATTACHMENT_SCHEMA: Any = {
     "type": "object",
     "properties": {
-        "media": {
-            PRIVATE_MEDIA_FILE_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "remoteMedia": {
-            REMOTE_MEDIA_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "media": to_nullable_object_schema(PRIVATE_MEDIA_FILE_INFO_SCHEMA),
+        "remoteMedia": to_nullable_object_schema(REMOTE_MEDIA_INFO_SCHEMA),
         "embedded": {
             "type": "boolean"
         },
@@ -2558,9 +2424,7 @@ POSTING_INFO_SCHEMA: Any = {
         "receiverGender": {
             "type": ["string", "null"]
         },
-        "receiverAvatar": {
-            AVATAR_IMAGE_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "receiverAvatar": to_nullable_object_schema(AVATAR_IMAGE_SCHEMA),
         "receiverPostingId": {
             "type": ["string", "null"]
         },
@@ -2576,9 +2440,7 @@ POSTING_INFO_SCHEMA: Any = {
         "ownerGender": {
             "type": ["string", "null"]
         },
-        "ownerAvatar": {
-            AVATAR_IMAGE_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "ownerAvatar": to_nullable_object_schema(AVATAR_IMAGE_SCHEMA),
         "bodyPreview": {
             "type": ["string", "null"]
         },
@@ -2604,9 +2466,7 @@ POSTING_INFO_SCHEMA: Any = {
         "heading": {
             "type": "string"
         },
-        "updateInfo": {
-            UPDATE_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "updateInfo": to_nullable_object_schema(UPDATE_INFO_SCHEMA),
         "createdAt": {
             "type": "integer"
         },
@@ -2651,21 +2511,11 @@ POSTING_INFO_SCHEMA: Any = {
             "type": ["array", "null"],
             "items": BLOCKED_POSTING_INSTANT_INFO_SCHEMA
         },
-        "operations": {
-            POSTING_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "receiverOperations": {
-            POSTING_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "commentOperations": {
-            COMMENT_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "reactionOperations": {
-            REACTION_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "commentReactionOperations": {
-            REACTION_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(POSTING_OPERATIONS_SCHEMA),
+        "receiverOperations": to_nullable_object_schema(POSTING_OPERATIONS_SCHEMA),
+        "commentOperations": to_nullable_object_schema(COMMENT_OPERATIONS_SCHEMA),
+        "reactionOperations": to_nullable_object_schema(REACTION_OPERATIONS_SCHEMA),
+        "commentReactionOperations": to_nullable_object_schema(REACTION_OPERATIONS_SCHEMA),
         "blockedOperations": {
             "type": ["array", "null"],
             "items": {
@@ -2688,15 +2538,9 @@ POSTING_INFO_SCHEMA: Any = {
             "type": ["array", "null"],
             "items": SHERIFF_MARK_SCHEMA
         },
-        "acceptedReactions": {
-            ACCEPTED_REACTIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "clientReaction": {
-            CLIENT_REACTION_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "reactions": {
-            REACTION_TOTALS_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "acceptedReactions": to_nullable_object_schema(ACCEPTED_REACTIONS_SCHEMA),
+        "clientReaction": to_nullable_object_schema(CLIENT_REACTION_INFO_SCHEMA),
+        "reactions": to_nullable_object_schema(REACTION_TOTALS_INFO_SCHEMA),
         "sources": {
             "type": ["array", "null"],
             "items": POSTING_SOURCE_INFO_SCHEMA
@@ -2720,10 +2564,7 @@ POSTING_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-POSTING_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": POSTING_INFO_SCHEMA
-}
+POSTING_INFO_ARRAY_SCHEMA = array_schema(POSTING_INFO_SCHEMA)
 
 POSTING_REVISION_INFO_SCHEMA: Any = {
     "type": "object",
@@ -2756,9 +2597,7 @@ POSTING_REVISION_INFO_SCHEMA: Any = {
         "heading": {
             "type": "string"
         },
-        "updateInfo": {
-            UPDATE_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "updateInfo": to_nullable_object_schema(UPDATE_INFO_SCHEMA),
         "createdAt": {
             "type": "integer"
         },
@@ -2780,12 +2619,8 @@ POSTING_REVISION_INFO_SCHEMA: Any = {
         "signatureVersion": {
             "type": ["integer", "null"]
         },
-        "clientReaction": {
-            CLIENT_REACTION_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "reactions": {
-            REACTION_TOTALS_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "clientReaction": to_nullable_object_schema(CLIENT_REACTION_INFO_SCHEMA),
+        "reactions": to_nullable_object_schema(REACTION_TOTALS_INFO_SCHEMA),
     },
     "required": [
         "id",
@@ -2798,17 +2633,12 @@ POSTING_REVISION_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-POSTING_REVISION_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": POSTING_REVISION_INFO_SCHEMA
-}
+POSTING_REVISION_INFO_ARRAY_SCHEMA = array_schema(POSTING_REVISION_INFO_SCHEMA)
 
 REACTION_CREATED_SCHEMA: Any = {
     "type": "object",
     "properties": {
-        "reaction": {
-            REACTION_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "reaction": to_nullable_object_schema(REACTION_INFO_SCHEMA),
         "totals": REACTION_TOTALS_INFO_SCHEMA,
     },
     "required": [
@@ -2835,9 +2665,7 @@ SETTING_META_INFO_SCHEMA: Any = {
         "title": {
             "type": "string"
         },
-        "modifiers": {
-            SETTING_TYPE_MODIFIERS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "modifiers": to_nullable_object_schema(SETTING_TYPE_MODIFIERS_SCHEMA),
     },
     "required": [
         "name",
@@ -2847,23 +2675,14 @@ SETTING_META_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-SETTING_META_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": SETTING_META_INFO_SCHEMA
-}
+SETTING_META_INFO_ARRAY_SCHEMA = array_schema(SETTING_META_INFO_SCHEMA)
 
 STORY_SUMMARY_DATA_SCHEMA: Any = {
     "type": "object",
     "properties": {
-        "node": {
-            STORY_SUMMARY_NODE_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "posting": {
-            STORY_SUMMARY_ENTRY_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "comment": {
-            STORY_SUMMARY_ENTRY_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "node": to_nullable_object_schema(STORY_SUMMARY_NODE_SCHEMA),
+        "posting": to_nullable_object_schema(STORY_SUMMARY_ENTRY_SCHEMA),
+        "comment": to_nullable_object_schema(STORY_SUMMARY_ENTRY_SCHEMA),
         "comments": {
             "type": ["array", "null"],
             "items": STORY_SUMMARY_ENTRY_SCHEMA
@@ -2871,15 +2690,9 @@ STORY_SUMMARY_DATA_SCHEMA: Any = {
         "totalComments": {
             "type": ["integer", "null"]
         },
-        "repliedTo": {
-            STORY_SUMMARY_ENTRY_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "parentPosting": {
-            STORY_SUMMARY_ENTRY_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "reaction": {
-            STORY_SUMMARY_REACTION_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "repliedTo": to_nullable_object_schema(STORY_SUMMARY_ENTRY_SCHEMA),
+        "parentPosting": to_nullable_object_schema(STORY_SUMMARY_ENTRY_SCHEMA),
+        "reaction": to_nullable_object_schema(STORY_SUMMARY_REACTION_SCHEMA),
         "reactions": {
             "type": ["array", "null"],
             "items": STORY_SUMMARY_REACTION_SCHEMA
@@ -2893,15 +2706,9 @@ STORY_SUMMARY_DATA_SCHEMA: Any = {
         "subscriptionReason": {
             "type": ["string", "null"]
         },
-        "friendGroup": {
-            STORY_SUMMARY_FRIEND_GROUP_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "blocked": {
-            STORY_SUMMARY_BLOCKED_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "sheriff": {
-            STORY_SUMMARY_SHERIFF_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "friendGroup": to_nullable_object_schema(STORY_SUMMARY_FRIEND_GROUP_SCHEMA),
+        "blocked": to_nullable_object_schema(STORY_SUMMARY_BLOCKED_SCHEMA),
+        "sheriff": to_nullable_object_schema(STORY_SUMMARY_SHERIFF_SCHEMA),
         "description": {
             "type": ["string", "null"]
         },
@@ -2924,9 +2731,7 @@ COMMENT_INFO_SCHEMA: Any = {
         "ownerGender": {
             "type": ["string", "null"]
         },
-        "ownerAvatar": {
-            AVATAR_IMAGE_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "ownerAvatar": to_nullable_object_schema(AVATAR_IMAGE_SCHEMA),
         "postingId": {
             "type": "string"
         },
@@ -2964,9 +2769,7 @@ COMMENT_INFO_SCHEMA: Any = {
         "heading": {
             "type": "string"
         },
-        "repliedTo": {
-            REPLIED_TO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "repliedTo": to_nullable_object_schema(REPLIED_TO_SCHEMA),
         "moment": {
             "type": "integer"
         },
@@ -2994,18 +2797,10 @@ COMMENT_INFO_SCHEMA: Any = {
         "signatureVersion": {
             "type": ["integer", "null"]
         },
-        "operations": {
-            COMMENT_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "reactionOperations": {
-            REACTION_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "ownerOperations": {
-            COMMENT_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "seniorOperations": {
-            COMMENT_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(COMMENT_OPERATIONS_SCHEMA),
+        "reactionOperations": to_nullable_object_schema(REACTION_OPERATIONS_SCHEMA),
+        "ownerOperations": to_nullable_object_schema(COMMENT_OPERATIONS_SCHEMA),
+        "seniorOperations": to_nullable_object_schema(COMMENT_OPERATIONS_SCHEMA),
         "blockedOperations": {
             "type": ["array", "null"],
             "items": {
@@ -3016,18 +2811,10 @@ COMMENT_INFO_SCHEMA: Any = {
             "type": ["array", "null"],
             "items": SHERIFF_MARK_SCHEMA
         },
-        "acceptedReactions": {
-            ACCEPTED_REACTIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "clientReaction": {
-            CLIENT_REACTION_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "seniorReaction": {
-            CLIENT_REACTION_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "reactions": {
-            REACTION_TOTALS_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "acceptedReactions": to_nullable_object_schema(ACCEPTED_REACTIONS_SCHEMA),
+        "clientReaction": to_nullable_object_schema(CLIENT_REACTION_INFO_SCHEMA),
+        "seniorReaction": to_nullable_object_schema(CLIENT_REACTION_INFO_SCHEMA),
+        "reactions": to_nullable_object_schema(REACTION_TOTALS_INFO_SCHEMA),
     },
     "required": [
         "id",
@@ -3114,12 +2901,8 @@ DRAFT_INFO_SCHEMA: Any = {
         "ownerFullName": {
             "type": ["string", "null"]
         },
-        "ownerAvatar": {
-            AVATAR_IMAGE_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "acceptedReactions": {
-            ACCEPTED_REACTIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "ownerAvatar": to_nullable_object_schema(AVATAR_IMAGE_SCHEMA),
+        "acceptedReactions": to_nullable_object_schema(ACCEPTED_REACTIONS_SCHEMA),
         "bodySrc": {
             "type": ["string", "null"]
         },
@@ -3142,15 +2925,9 @@ DRAFT_INFO_SCHEMA: Any = {
         "publishAt": {
             "type": ["integer", "null"]
         },
-        "updateInfo": {
-            UPDATE_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "operations": {
-            POSTING_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "commentOperations": {
-            COMMENT_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "updateInfo": to_nullable_object_schema(UPDATE_INFO_SCHEMA),
+        "operations": to_nullable_object_schema(POSTING_OPERATIONS_SCHEMA),
+        "commentOperations": to_nullable_object_schema(COMMENT_OPERATIONS_SCHEMA),
     },
     "required": [
         "id",
@@ -3163,28 +2940,18 @@ DRAFT_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-DRAFT_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": DRAFT_INFO_SCHEMA
-}
+DRAFT_INFO_ARRAY_SCHEMA = array_schema(DRAFT_INFO_SCHEMA)
 
 ENTRY_INFO_SCHEMA: Any = {
     "type": "object",
     "properties": {
-        "posting": {
-            POSTING_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "comment": {
-            COMMENT_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "posting": to_nullable_object_schema(POSTING_INFO_SCHEMA),
+        "comment": to_nullable_object_schema(COMMENT_INFO_SCHEMA),
     },
     "additionalProperties": False
 }
 
-ENTRY_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": ENTRY_INFO_SCHEMA
-}
+ENTRY_INFO_ARRAY_SCHEMA = array_schema(ENTRY_INFO_SCHEMA)
 
 PLUGIN_INFO_SCHEMA: Any = {
     "type": "object",
@@ -3229,10 +2996,7 @@ PLUGIN_INFO_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-PLUGIN_INFO_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": PLUGIN_INFO_SCHEMA
-}
+PLUGIN_INFO_ARRAY_SCHEMA = array_schema(PLUGIN_INFO_SCHEMA)
 
 STORY_INFO_SCHEMA: Any = {
     "type": "object",
@@ -3273,27 +3037,19 @@ STORY_INFO_SCHEMA: Any = {
         "summaryFullName": {
             "type": ["string", "null"]
         },
-        "summaryAvatar": {
-            AVATAR_IMAGE_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "summaryAvatar": to_nullable_object_schema(AVATAR_IMAGE_SCHEMA),
         "summary": {
             "type": ["string", "null"]
         },
-        "summaryData": {
-            STORY_SUMMARY_DATA_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "summaryData": to_nullable_object_schema(STORY_SUMMARY_DATA_SCHEMA),
         "trackingId": {
             "type": ["string", "null"]
         },
-        "posting": {
-            POSTING_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "posting": to_nullable_object_schema(POSTING_INFO_SCHEMA),
         "postingId": {
             "type": ["string", "null"]
         },
-        "comment": {
-            COMMENT_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "comment": to_nullable_object_schema(COMMENT_INFO_SCHEMA),
         "commentId": {
             "type": ["string", "null"]
         },
@@ -3312,9 +3068,7 @@ STORY_INFO_SCHEMA: Any = {
         "remoteMediaId": {
             "type": ["string", "null"]
         },
-        "operations": {
-            STORY_OPERATIONS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "operations": to_nullable_object_schema(STORY_OPERATIONS_SCHEMA),
     },
     "required": [
         "id",
@@ -3381,12 +3135,8 @@ PUSH_CONTENT_SCHEMA: Any = {
         "id": {
             "type": ["string", "null"]
         },
-        "story": {
-            STORY_INFO_SCHEMA.copy().update(type=["object", "null"])
-        },
-        "feedStatus": {
-            FEED_WITH_STATUS_SCHEMA.copy().update(type=["object", "null"])
-        },
+        "story": to_nullable_object_schema(STORY_INFO_SCHEMA),
+        "feedStatus": to_nullable_object_schema(FEED_WITH_STATUS_SCHEMA),
     },
     "required": [
         "type",
@@ -3394,7 +3144,4 @@ PUSH_CONTENT_SCHEMA: Any = {
     "additionalProperties": False
 }
 
-PUSH_CONTENT_ARRAY_SCHEMA = {
-    "type": "array",
-    "items": PUSH_CONTENT_SCHEMA
-}
+PUSH_CONTENT_ARRAY_SCHEMA = array_schema(PUSH_CONTENT_SCHEMA)

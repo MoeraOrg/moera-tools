@@ -1,10 +1,10 @@
-from typing import Any, Literal, TypeAlias, Mapping, cast
+from typing import Any, Literal, TypeAlias, cast
 
 import requests
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 
-from moeralib.structure import Json, Structure, structure_or_none, structure_list
+from moeralib.structure import Json, Structure, structure_or_none, structure_list, array_schema
 
 MAIN_SERVER = 'https://naming.moera.org/moera-naming'
 DEV_SERVER = 'https://naming-dev.moera.org/moera-naming'
@@ -102,10 +102,7 @@ REGISTERED_NAME_INFO_SCHEMA = {
     "required": ["name", "generation", "nodeUri"]
 }
 
-REGISTERED_NAME_INFO_LIST_SCHEMA = {
-    "type": "array",
-    "items": REGISTERED_NAME_INFO_SCHEMA
-}
+REGISTERED_NAME_INFO_LIST_SCHEMA = array_schema(REGISTERED_NAME_INFO_SCHEMA)
 
 
 class SigningKeyInfo(Structure):
@@ -127,65 +124,61 @@ SIGNING_KEY_INFO_SCHEMA = {
     "additionalProperties": False
 }
 
-SIGNING_KEY_INFO_LIST_SCHEMA = {
-    "type": "array",
-    "items": SIGNING_KEY_INFO_SCHEMA
-}
+SIGNING_KEY_INFO_LIST_SCHEMA = array_schema(SIGNING_KEY_INFO_SCHEMA)
 
 
 class MoeraNamingError(Exception):
 
-    def __init__(self, method, message):
+    def __init__(self, method: str, message: str):
         super().__init__(method + ': Naming server error: ' + message)
 
 
 class MoeraNamingConnectionError(Exception):
 
-    def __init__(self, message):
+    def __init__(self, message: str):
         super().__init__('Naming server connection error: ' + message)
 
 
 class MoeraNaming:
-    server: str
-    call_id: int
+    _server: str
+    _call_id: int
 
     def __init__(self, server: str = MAIN_SERVER) -> None:
-        self.server = server
-        self.call_id = 0
+        self._server = server
+        self._call_id = 0
 
-    def call(self, method: str, params: list[Any],
-             schema: Mapping[str, Any] | None = None) -> Json | list[Json] | str | bool | None:
+    def call(self, method: str, params: list[Any], schema: Any = None) -> Json | list[Json] | str | bool | None:
         try:
             r = requests.post(
-                self.server,
+                self._server,
                 json={
                     'method': method,
                     'params': params,
                     'jsonrpc': '2.0',
-                    'id': self.call_id,
+                    'id': self._call_id,
                 }
             )
-            self.call_id += 1
+            self._call_id += 1
 
             response = r.json()
             if r.status_code not in [200, 201] or 'error' in response:
                 if 'error' in response and 'message' in response['error']:
                     raise MoeraNamingError(method, response['error']['message'])
                 else:
-                    raise MoeraNamingError(method, "Invalid server response: " + repr(response))
+                    raise MoeraNamingError(method, 'Invalid server response: ' + repr(response))
             if 'result' not in response:
-                raise MoeraNamingError(method, "Invalid server response: " + repr(response))
+                raise MoeraNamingError(method, 'Invalid server response: ' + repr(response))
             result = response['result']
             if schema is not None and result is not None:
                 validate(result, schema=schema)
 
             return result
         except requests.exceptions.InvalidJSONError as e:
-            raise MoeraNamingError(method, "Invalid server response") from e
+            raise MoeraNamingError(method, 'Invalid server response') from e
         except requests.exceptions.RequestException as e:
             raise MoeraNamingConnectionError(str(e)) from e
         except ValidationError as e:
-            raise MoeraNamingError(method, "Invalid server response: " + repr(e)) from e
+            raise MoeraNamingError(method, 'Invalid server response: ' + repr(e)) from e
 
     def put(self, name: str, generation: int, updating_key: str | None = None, node_uri: str | None = None,
             signing_key: str | None = None, valid_from: Timestamp | None = None, previous_digest: str | None = None,

@@ -1,13 +1,11 @@
 # This file is generated
 
-from typing import Generic, Literal, TypeAlias, TypeVar
+from typing import Literal, TypeAlias
 
 from moeralib.structure import Structure
 
 Timestamp: TypeAlias = int
 PrincipalValue: TypeAlias = str
-
-B = TypeVar('B')
 
 AskSubject = Literal["subscribe", "friend"]
 
@@ -1105,13 +1103,13 @@ class Body(Structure):
     link_previews: list[LinkPreview] | None = None
 
 
-class CommentRevisionInfoBase(Generic[B], Structure):
+class CommentRevisionInfo(Structure):
     id: str
     posting_revision_id: str
-    body_preview: B | None = None
+    body_preview: Body | None = None
     body_src_hash: bytes
     body_src_format: SourceFormat | None = None
-    body: B
+    body: Body
     body_format: BodyFormat | None = None
     heading: str
     created_at: Timestamp
@@ -1124,13 +1122,9 @@ class CommentRevisionInfoBase(Generic[B], Structure):
     reactions: ReactionTotalsInfo | None = None
 
 
-EncodedCommentRevisionInfo = CommentRevisionInfoBase[str]
-CommentRevisionInfo = CommentRevisionInfoBase[Body]
-
-
 class CommentSourceText(Structure):
     owner_avatar: AvatarDescription | None = None
-    body_src: str | None = None
+    body_src: Body | None = None
     body_src_format: SourceFormat | None = None
     media: list[MediaWithDigest] | None = None
     accepted_reactions: AcceptedReactions | None = None
@@ -1144,10 +1138,10 @@ class CommentText(Structure):
     owner_full_name: str | None = None
     owner_gender: str | None = None
     owner_avatar: AvatarDescription | None = None
-    body_preview: str | None = None
-    body_src: str | None = None
+    body_preview: Body | None = None
+    body_src: Body | None = None
     body_src_format: SourceFormat | None = None
-    body: str | None = None
+    body: Body | None = None
     body_format: BodyFormat | None = None
     media: list[str] | None = None
     created_at: Timestamp | None = None
@@ -1169,7 +1163,7 @@ class DraftText(Structure):
     owner_full_name: str | None = None
     owner_avatar: AvatarDescription | None = None
     accepted_reactions: AcceptedReactions | None = None
-    body_src: str | None = None
+    body_src: Body | None = None
     body_src_format: SourceFormat | None = None
     media: list[RemoteMedia] | None = None
     publish_at: int | None = None
@@ -1209,7 +1203,7 @@ class MediaAttachment(Structure):
     embedded: bool
 
 
-class PostingInfoBase(Generic[B], Structure):
+class PostingInfo(Structure):
     id: str
     revision_id: str
     receiver_revision_id: str | None = None
@@ -1224,11 +1218,11 @@ class PostingInfoBase(Generic[B], Structure):
     owner_full_name: str | None = None
     owner_gender: str | None = None
     owner_avatar: AvatarImage | None = None
-    body_preview: B | None = None
-    body_src: B | None = None
+    body_preview: Body | None = None
+    body_src: Body | None = None
     body_src_hash: bytes
     body_src_format: SourceFormat | None = None
-    body: B
+    body: Body
     body_format: BodyFormat | None = None
     media: list[MediaAttachment] | None = None
     heading: str
@@ -1263,17 +1257,13 @@ class PostingInfoBase(Generic[B], Structure):
     total_comments: int | None = None
 
 
-EncodedPostingInfo = PostingInfoBase[str]
-PostingInfo = PostingInfoBase[Body]
-
-
-class PostingRevisionInfoBase(Generic[B], Structure):
+class PostingRevisionInfo(Structure):
     id: str
     receiver_id: str | None = None
-    body_preview: B | None = None
+    body_preview: Body | None = None
     body_src_hash: bytes
     body_src_format: SourceFormat | None = None
-    body: B
+    body: Body
     body_format: BodyFormat | None = None
     media: list[MediaAttachment] | None = None
     heading: str
@@ -1289,13 +1279,9 @@ class PostingRevisionInfoBase(Generic[B], Structure):
     reactions: ReactionTotalsInfo | None = None
 
 
-EncodedPostingRevisionInfo = PostingRevisionInfoBase[str]
-PostingRevisionInfo = PostingRevisionInfoBase[Body]
-
-
 class PostingSourceText(Structure):
     owner_avatar: AvatarDescription | None = None
-    body_src: str | None = None
+    body_src: Body | None = None
     body_src_format: SourceFormat | None = None
     media: list[MediaWithDigest] | None = None
     accepted_reactions: AcceptedReactions | None = None
@@ -1308,10 +1294,10 @@ class PostingText(Structure):
     owner_full_name: str | None = None
     owner_gender: str | None = None
     owner_avatar: AvatarDescription | None = None
-    body_preview: str | None = None
-    body_src: str | None = None
+    body_preview: Body | None = None
+    body_src: Body | None = None
     body_src_format: SourceFormat | None = None
-    body: str | None = None
+    body: Body | None = None
     body_format: BodyFormat | None = None
     media: list[str] | None = None
     created_at: Timestamp | None = None
@@ -1369,7 +1355,7 @@ class StorySummaryData(Structure):
     description: str | None = None
 
 
-class CommentInfoBase(Generic[B], Structure):
+class CommentInfo(Structure):
     id: str
     owner_name: str
     owner_full_name: str | None = None
@@ -1379,11 +1365,11 @@ class CommentInfoBase(Generic[B], Structure):
     posting_revision_id: str
     revision_id: str
     total_revisions: int
-    body_preview: B | None = None
-    body_src: B | None = None
+    body_preview: Body | None = None
+    body_src: Body | None = None
     body_src_hash: bytes
     body_src_format: SourceFormat | None = None
-    body: B
+    body: Body
     body_format: BodyFormat | None = None
     media: list[MediaAttachment] | None = None
     heading: str
@@ -1409,24 +1395,16 @@ class CommentInfoBase(Generic[B], Structure):
     reactions: ReactionTotalsInfo | None = None
 
 
-EncodedCommentInfo = CommentInfoBase[str]
-CommentInfo = CommentInfoBase[Body]
-
-
-class CommentsSliceInfoBase(Generic[B], Structure):
+class CommentsSliceInfo(Structure):
     before: int
     after: int
-    comments: list[CommentInfoBase[B]]
+    comments: list[CommentInfo]
     total: int
     total_in_past: int
     total_in_future: int
 
 
-EncodedCommentsSliceInfo = CommentsSliceInfoBase[str]
-CommentsSliceInfo = CommentsSliceInfoBase[Body]
-
-
-class DraftInfoBase(Generic[B], Structure):
+class DraftInfo(Structure):
     id: str
     draft_type: DraftType
     receiver_name: str
@@ -1439,9 +1417,9 @@ class DraftInfoBase(Generic[B], Structure):
     owner_full_name: str | None = None
     owner_avatar: AvatarImage | None = None
     accepted_reactions: AcceptedReactions | None = None
-    body_src: B | None = None
+    body_src: Body | None = None
     body_src_format: SourceFormat | None = None
-    body: B
+    body: Body
     body_format: BodyFormat | None = None
     media: list[MediaAttachment] | None = None
     heading: str
@@ -1451,17 +1429,9 @@ class DraftInfoBase(Generic[B], Structure):
     comment_operations: CommentOperations | None = None
 
 
-EncodedDraftInfo = DraftInfoBase[str]
-DraftInfo = DraftInfoBase[Body]
-
-
-class EntryInfoBase(Generic[B], Structure):
-    posting: PostingInfoBase[B] | None = None
-    comment: CommentInfoBase[B] | None = None
-
-
-EncodedEntryInfo = EntryInfoBase[str]
-EntryInfo = EntryInfoBase[Body]
+class EntryInfo(Structure):
+    posting: PostingInfo | None = None
+    comment: CommentInfo | None = None
 
 
 class PluginDescription(Structure):
@@ -1485,7 +1455,7 @@ class PluginInfo(Structure):
     token_id: str | None = None
 
 
-class StoryInfoBase(Generic[B], Structure):
+class StoryInfo(Structure):
     id: str
     feed_name: str
     story_type: StoryType
@@ -1502,9 +1472,9 @@ class StoryInfoBase(Generic[B], Structure):
     summary: str | None = None
     summary_data: StorySummaryData | None = None
     tracking_id: str | None = None
-    posting: PostingInfoBase[B] | None = None
+    posting: PostingInfo | None = None
     posting_id: str | None = None
-    comment: CommentInfoBase[B] | None = None
+    comment: CommentInfo | None = None
     comment_id: str | None = None
     remote_node_name: str | None = None
     remote_full_name: str | None = None
@@ -1514,37 +1484,21 @@ class StoryInfoBase(Generic[B], Structure):
     operations: StoryOperations | None = None
 
 
-EncodedStoryInfo = StoryInfoBase[str]
-StoryInfo = StoryInfoBase[Body]
-
-
-class CommentCreatedBase(Generic[B], Structure):
-    comment: CommentInfoBase[B]
+class CommentCreated(Structure):
+    comment: CommentInfo
     total: int
 
 
-EncodedCommentCreated = CommentCreatedBase[str]
-CommentCreated = CommentCreatedBase[Body]
-
-
-class FeedSliceInfoBase(Generic[B], Structure):
+class FeedSliceInfo(Structure):
     before: int
     after: int
-    stories: list[StoryInfoBase[B]]
+    stories: list[StoryInfo]
     total_in_past: int
     total_in_future: int
 
 
-EncodedFeedSliceInfo = FeedSliceInfoBase[str]
-FeedSliceInfo = FeedSliceInfoBase[Body]
-
-
-class PushContentBase(Generic[B], Structure):
+class PushContent(Structure):
     type: PushContentType
     id: str | None = None
-    story: StoryInfoBase[B] | None = None
+    story: StoryInfo | None = None
     feed_status: FeedWithStatus | None = None
-
-
-EncodedPushContent = PushContentBase[str]
-PushContent = PushContentBase[Body]

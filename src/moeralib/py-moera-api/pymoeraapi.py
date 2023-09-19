@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import sys
 from typing import Any, TextIO
 
@@ -34,32 +35,38 @@ def comma_wrap(s: str, indent: int) -> str:
     return result
 
 
+def params_wrap(template: str, substitute: str, indent: int) -> str:
+    line = template % substitute
+    if len(line) > 120:
+        line = template % ('\n' + ind(indent) + comma_wrap(substitute, indent) + '\n' + ind(indent - 1))
+    return line
+
+
 def read_api(ifname: str) -> Any:
     with open(ifname, 'r') as ifile:
         return yaml.safe_load(ifile)
 
 
 def generate_enum(enum: Any, tfile: TextIO) -> None:
-    values = ", ".join('"%s"' % item['name'] for item in enum['values'])
-    line = '\n%s = Literal[%s]\n' % (enum['name'], values)
-    if len(line) > 120:
-        line = '\n%s = Literal[\n    %s\n]\n' % (enum['name'], comma_wrap(values, 1))
+    values = ", ".join(f'"{item["name"]}"' for item in enum['values'])
+    line = params_wrap(f'\n{enum["name"]} = Literal[%s]\n', values, 1)
     tfile.write(line)
 
 
 def schema_type(sfile: TextIO, indent: int, a_type: str, struct: bool = False, nullable: bool = False,
                 default: Any = None, min: float | None = None, max: float | None = None) -> None:
-    if struct and not nullable:
-        sfile.write(to_snake(a_type).upper() + '_SCHEMA')
-        return
-    sfile.write('{\n')
     if struct:
-        sfile.write(ind(indent + 1) + to_snake(a_type).upper() + '_SCHEMA.copy().update(type=["object", "null"])')
-    else:
         if nullable:
-            sfile.write(ind(indent + 1) + f'"type": ["{a_type}", "null"]')
+            sfile.write('to_nullable_object_schema(%s_SCHEMA)' % to_snake(a_type).upper())
         else:
-            sfile.write(ind(indent + 1) + f'"type": "{a_type}"')
+            sfile.write(to_snake(a_type).upper() + '_SCHEMA')
+        return
+
+    sfile.write('{\n')
+    if nullable:
+        sfile.write(ind(indent + 1) + f'"type": ["{a_type}", "null"]')
+    else:
+        sfile.write(ind(indent + 1) + f'"type": "{a_type}"')
     if default is not None:
         sfile.write(',\n')
         sfile.write(ind(indent + 1) + f'"default": {default}')
@@ -109,7 +116,7 @@ def schema_map_string_int(sfile: TextIO, indent: int, nullable: bool = False) ->
 
 
 def generate_operations(operations: Any, tfile: TextIO, sfile: TextIO) -> None:
-    tfile.write('\n\nclass %s(Structure):\n' % operations['name'])
+    tfile.write(f'\n\nclass {operations["name"]}(Structure):\n')
     for field in operations['fields']:
         tfile.write('    %s: PrincipalValue | None = None\n' % to_snake(field['name']))
 
@@ -118,7 +125,7 @@ def generate_operations(operations: Any, tfile: TextIO, sfile: TextIO) -> None:
     sfile.write('    "type": "object",\n')
     sfile.write('    "properties": {\n')
     for field in operations['fields']:
-        sfile.write('        "%s": ' % field['name'])
+        sfile.write(f'{ind(2)}"{field["name"]}": ')
         schema_type(sfile, 2, "string", nullable=True)
         sfile.write(',\n')
     sfile.write('    },\n')
@@ -176,23 +183,15 @@ class Structure:
     def generic(self) -> bool:
         return self.uses_body and self.output
 
-    def generate_class(self, tfile: TextIO, structs: dict[str, Structure]) -> None:
-        if self.generic:
-            tfile.write('\n\nclass %sBase(Generic[B], Structure):\n' % self.data['name'])
-        else:
-            tfile.write('\n\nclass %s(Structure):\n' % self.data['name'])
+    def generate_class(self, tfile: TextIO) -> None:
+        tfile.write(f'\n\nclass {self.data["name"]}(Structure):\n')
         for field in self.data['fields']:
             if field.get('optional', False) and 'py-default' not in field:
                 tmpl = '    %s: %s | None = None\n'
             else:
                 tmpl = '    %s: %s\n'
             if 'struct' in field:
-                if field['struct'] == 'Body':
-                    t = 'B' if self.generic else 'str'
-                else:
-                    t = field['struct']
-                    if self.generic and field['struct'] in structs and structs[field['struct']].generic:
-                        t += 'Base[B]'
+                t = field['struct']
             elif 'enum' in field:
                 t = field['enum']
             else:
@@ -200,11 +199,8 @@ class Structure:
                     continue
                 t = to_py_type(field['type'])
             if field.get('array', False):
-                t = 'list[%s]' % t
+                t = f'list[{t}]'
             tfile.write(tmpl % (to_snake(field['name']), t))
-        if self.generic:
-            tfile.write('\n\nEncoded{name} = {name}Base[str]\n'.format(name=self.data['name']))
-            tfile.write('{name} = {name}Base[Body]\n'.format(name=self.data['name']))
 
     def generate_schema(self, sfile: TextIO) -> None:
         sfile.write('\n{name}_SCHEMA: Any = {{\n'
@@ -216,7 +212,7 @@ class Structure:
             if field.get('type') == 'any':
                 continue
 
-            sfile.write('        "%s": ' % field['name'])
+            sfile.write(f'{ind(2)}"{field["name"]}": ')
             default = field.get('py-default')
             optional = field.get('optional', False) and default is None
             array = field.get('array', False)
@@ -258,12 +254,11 @@ class Structure:
         sfile.write('}\n')
 
         if self.output_array:
-            sfile.write('\n%s_ARRAY_SCHEMA = ' % to_snake(self.data['name']).upper())
-            schema_array(sfile, 0, self.data['name'], struct=True)
-            sfile.write('\n')
+            sfile.write('\n{name}_ARRAY_SCHEMA = array_schema({name}_SCHEMA)\n'
+                        .format(name=to_snake(self.data['name']).upper()))
 
-    def generate(self, tfile: TextIO, sfile: TextIO, structs: dict[str, Structure]) -> None:
-        self.generate_class(tfile, structs)
+    def generate(self, tfile: TextIO, sfile: TextIO) -> None:
+        self.generate_class(tfile)
         if self.output:
             self.generate_schema(sfile)
         self.generated = True
@@ -327,7 +322,7 @@ def generate_structures(structs: dict[str, Structure], tfile: TextIO, sfile: Tex
                 continue
             if any(not structs[d].generated for d in struct.depends if d in structs):
                 continue
-            struct.generate(tfile, sfile, structs)
+            struct.generate(tfile, sfile)
             gen = True
     loop = [s.data['name'] for s in structs.values() if not s.generated]
     if len(loop) > 0:
@@ -335,29 +330,185 @@ def generate_structures(structs: dict[str, Structure], tfile: TextIO, sfile: Tex
         exit(1)
 
 
+def is_no_auth(auth: str) -> bool:
+    variants = auth.split(" or ")
+    return variants == ['none'] or variants == ['signature']
+
+
+def generate_calls(api: Any, structs: dict[str, Structure], afile: TextIO) -> None:
+    for obj in api['objects']:
+        for request in obj.get('requests', []):
+            if 'function' not in request:
+                continue
+
+            function = to_snake(request['function'])
+            params = 'self'
+            call_params = f'"{function}", location, method="{request["type"]}"'
+
+            tail_params = ''
+            url_params: dict[str, str] = {}
+            flag_name: str | None = None
+            flag_py_name: str | None = None
+            flags: list[str] = []
+            if 'params' in request:
+                for param in request['params']:
+                    if 'name' not in param:
+                        print('Missing name of parameter of the request "{method} {url}"'
+                              .format(method=request['type'], url=request['url']))
+                        exit(1)
+                    name = param['name']
+                    py_name = to_snake(name)
+                    url_params[name] = py_name
+                    if 'enum' in param:
+                        py_type = 'types.' + param['enum']
+                    else:
+                        py_type = to_py_type(param['type'])
+                    if 'flags' in param:
+                        flag_name = name
+                        flag_py_name = py_name
+                        flags = [flag['name'] for flag in param['flags']]
+                        for flag in flags:
+                            params += f', with_{flag}: bool = False'
+                    else:
+                        if param.get('optional', False):
+                            tail_params += f', {py_name}: {py_type} | None = None'
+                        else:
+                            params += f', {py_name}: {py_type}'
+            if 'in' in request:
+                inp = request['in']
+                if 'type' in inp:
+                    if inp['type'] != 'blob':
+                        print('Unrecognised type "{type}" of the input body of the request "{method} {url}"'
+                              .format(type=inp['type'], method=request['type'], url=request['url']))
+                        exit(1)
+                    params += ', file: IO, file_type: str'
+                    call_params += f', body_file=file, body_file_type=file_type'
+                else:
+                    if 'name' not in inp:
+                        print('Missing name of body of the request "{method} {url}"'
+                              .format(method=request['type'], url=request['url']))
+                        exit(1)
+                    name = to_snake(inp['name'])
+                    py_type = 'types.' + inp['struct']
+                    if inp.get('array', False):
+                        py_type = f'list[{py_type}]'
+                    params += f', {name}: {py_type}'
+                    call_params += f', body={name}'
+            params += tail_params
+
+            if is_no_auth(request.get('auth', 'none')):
+                call_params += ', auth=False'
+
+            location: str = request['url']
+            if len(url_params) > 0:
+                uparams = []
+                p = re.compile(r'{(\w+)}')
+                for name in p.findall(location):
+                    if name not in url_params:
+                        print('Unknown parameter "{param}" referenced in location "{url}"'
+                              .format(param=name, url=request['url']))
+                        exit(1)
+                    uparams.append(f'{name}=quote_plus({url_params[name]})')
+                    del url_params[name]
+                location = params_wrap(
+                    f'{ind(2)}location = "{location}".format(%s)\n',
+                    ', '.join(uparams),
+                    3
+                )
+            else:
+                location = f'{ind(2)}location = "{location}"\n'
+
+            subs = []
+            for name, py_name in url_params.items():
+                subs.append(f'"{name}": {py_name}')
+            if len(subs) > 0:
+                query_params = params_wrap(f'{ind(2)}params = {{%s}}\n', ', '.join(subs), 3)
+                call_params += ', params=params'
+            else:
+                query_params = ''
+
+            result = 'types.Result'
+            result_schema = 'schemas.RESULT_SCHEMA'
+            result_array = False
+            result_body = False
+            if 'out' in request:
+                out = request['out']
+                if 'type' in out:
+                    if out['type'] != 'blob':
+                        print('Unrecognised type "{type}" of the output body of the request "{method} {url}"'
+                              .format(type=out['type'], method=request['type'], url=request['url']))
+                        exit(1)
+                    result = 'IO'
+                    result_schema = '"blob"'
+                else:
+                    struct = out['struct']
+                    result = 'types.' + struct
+                    if struct in structs and structs[struct].uses_body:
+                        result_body = True
+                    if out.get('array', False):
+                        result_schema = 'schemas.%s_ARRAY_SCHEMA' % to_snake(struct).upper()
+                        result_array = True
+                    else:
+                        result_schema = 'schemas.%s_SCHEMA' % to_snake(struct).upper()
+            call_params += f', schema={result_schema}'
+            if result_body:
+                call_params += ', bodies=True'
+
+            if result_array:
+                afile.write(params_wrap(f'\n{ind(1)}def {function}(%s) -> list[{result}]:\n', params, 2))
+            else:
+                afile.write(params_wrap(f'\n{ind(1)}def {function}(%s) -> {result}:\n', params, 2))
+            afile.write(location)
+            if flag_name is not None:
+                items = ', '.join(f'"{flag}": with_{flag}' for flag in flags)
+                afile.write(f'{ind(2)}{flag_py_name} = comma_separated_flags({{{items}}})\n')
+            afile.write(query_params)
+            afile.write(params_wrap(f"{ind(2)}data = self.call(%s)\n", call_params, 3))
+            if result == 'IO':
+                afile.write(f"{ind(2)}return cast(IO, data)\n")
+            elif result_array:
+                afile.write(f"{ind(2)}return structure_list(cast(list[Json], data), {result})\n")
+            else:
+                afile.write(f"{ind(2)}return {result}(cast(Json, data))\n")
+
+
 PREAMBLE_TYPES = '''# This file is generated
 
-from typing import Generic, Literal, TypeAlias, TypeVar
+from typing import Literal, TypeAlias
 
 from moeralib.structure import Structure
 
 Timestamp: TypeAlias = int
 PrincipalValue: TypeAlias = str
-
-B = TypeVar('B')
 '''
 
 PREAMBLE_SCHEMAS = '''# This file is generated
 
 from typing import Any
+
+from moeralib.structure import to_nullable_object_schema, array_schema
+'''
+
+PREAMBLE_CALLS = '''# This file is generated
+
+from typing import IO, cast
+from urllib.parse import quote_plus
+
+from moeralib.node import schemas
+from moeralib.node.caller import Caller
+from moeralib.node import types
+from moeralib.structure import Json, comma_separated_flags, structure_list
+
+
+class MoeraNode(Caller):
 '''
 
 
 def generate_types(api: Any, outdir: str) -> None:
     structs = scan_structures(api)
 
-    with open(outdir + '/type.py', 'w+') as tfile:
-        with open(outdir + '/schema.py', 'w+') as sfile:
+    with open(outdir + '/types.py', 'w+') as tfile:
+        with open(outdir + '/schemas.py', 'w+') as sfile:
             tfile.write(PREAMBLE_TYPES)
             sfile.write(PREAMBLE_SCHEMAS)
             for enum in api['enums']:
@@ -366,9 +517,9 @@ def generate_types(api: Any, outdir: str) -> None:
                 generate_operations(operations, tfile, sfile)
             generate_structures(structs, tfile, sfile)
 
-    # with open(outdir + '/node.py', 'w+') as afile:
-    #     afile.write(PREAMBLE_CALLS)
-    #     generate_calls(api, structs, afile)
+    with open(outdir + '/node.py', 'w+') as afile:
+        afile.write(PREAMBLE_CALLS)
+        generate_calls(api, structs, afile)
 
 
 if len(sys.argv) < 2 or sys.argv[1] == '':
