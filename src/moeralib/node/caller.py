@@ -1,7 +1,7 @@
 import json
 from copy import deepcopy
 from enum import Enum
-from typing import Any, IO
+from typing import Any, IO, Mapping, Sequence
 
 import requests
 from jsonschema import validate
@@ -9,7 +9,7 @@ from jsonschema.exceptions import ValidationError
 
 from moeralib.node import schemas
 from moeralib.node.types import Result, BodyFormat, SourceFormat, Body
-from moeralib.structure import Structure, Json
+from moeralib.structure import Structure
 
 
 class MoeraNodeError(Exception):
@@ -22,7 +22,7 @@ class MoeraNodeApiError(MoeraNodeError):
     error_code: str
 
     def __init__(self, name: str, result: Result):
-        super().__init__(name, result.message)
+        super().__init__(name, result.message if result.message is not None else '')
         self.error_code = result.error_code
 
 
@@ -45,8 +45,8 @@ def decode_body(name: str, encoded: str, format: BodyFormat | SourceFormat | Non
         raise MoeraNodeError(name, 'Invalid body: ' + repr(e)) from e
 
 
-def decode_bodies(name: str, data: Json | list[Json]) -> Json | list[Json]:
-    if isinstance(data, list):
+def decode_bodies(name: str, data):
+    if isinstance(data, Sequence):
         return [decode_bodies(name, item) for item in data]
     decoded = deepcopy(data)
     if data.get('stories', None) is not None:
@@ -97,14 +97,17 @@ class Caller:
     def auth_method(self, auth_method: NodeAuth) -> None:
         self._auth_method = auth_method
 
-    def call(self, name: str, location: str, params: dict[str, str | None] | None = None, method: str = 'GET',
-             body: Structure | list[Structure] | None = None, body_file: IO | None = None,
+    def call(self, name: str, location: str, params: Mapping[str, str | int | None] | None = None, method: str = 'GET',
+             body: Structure | Sequence[Structure] | None = None, body_file: IO | None = None,
              body_file_type: str | None = None, auth: bool = True, schema: Any = None,
-             bodies: bool = False) -> Json | list[Json] | IO:
+             bodies: bool = False):
         try:
             body_encoded = None
             if body is not None:
-                body_encoded = json.dumps(body.json())
+                if isinstance(body, Sequence):
+                    body_encoded = json.dumps([b.json() for b in body])
+                else:
+                    body_encoded = json.dumps(body.json())
 
             headers = {
                 'Accept': 'application/json',
@@ -127,6 +130,9 @@ class Caller:
                         bearer = 'secret:' + self._root_secret
             if bearer is not None:
                 headers['Authorization'] = f'Bearer ${bearer}'
+
+            if self._root is None:
+                raise ValueError('Node URL is not set')
 
             r = requests.request(
                 method=method,

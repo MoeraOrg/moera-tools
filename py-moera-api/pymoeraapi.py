@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import re
 import sys
-from typing import Any, TextIO
+from typing import Any, TextIO, Mapping, List, Sequence
 
 import yaml
-
 from camel_converter import to_snake
 
 
@@ -135,14 +134,14 @@ def generate_operations(operations: Any, tfile: TextIO, sfile: TextIO) -> None:
 
 PY_TYPES = {
     'String': 'str',
-    'String[]': 'list[str]',
+    'String[]': 'Sequence[str]',
     'int': 'int',
     'float': 'float',
     'boolean': 'bool',
     'timestamp': 'Timestamp',
     'byte[]': 'bytes',
     'UUID': 'str',
-    'String -> int': 'dict[str, int]'
+    'String -> int': 'Mapping[str, int]'
 }
 
 
@@ -170,7 +169,7 @@ SCHEMA_TYPES = {
 class Structure:
     data: Any
     generated: bool = False
-    depends: list[str]
+    depends: Sequence[str]
     uses_body: bool = False
     output: bool = False
     output_array: bool = False
@@ -199,7 +198,7 @@ class Structure:
                     continue
                 t = to_py_type(field['type'])
             if field.get('array', False):
-                t = f'list[{t}]'
+                t = f'Sequence[{t}]'
             tfile.write(tmpl % (to_snake(field['name']), t))
 
     def generate_schema(self, sfile: TextIO) -> None:
@@ -207,7 +206,7 @@ class Structure:
                     .format(name=to_snake(self.data['name']).upper()))
         sfile.write('    "type": "object",\n')
         sfile.write('    "properties": {\n')
-        required: list[str] = []
+        required: List[str] = []
         for field in self.data['fields']:
             if field.get('type') == 'any':
                 continue
@@ -264,7 +263,7 @@ class Structure:
         self.generated = True
 
 
-def scan_body_usage(structs: dict[str, Structure]) -> None:
+def scan_body_usage(structs: Mapping[str, Structure]) -> None:
     for struct in structs.values():
         if 'Body' in struct.depends:
             struct.uses_body = True
@@ -281,7 +280,7 @@ def scan_body_usage(structs: dict[str, Structure]) -> None:
                     modified = True
 
 
-def scan_output_usage(api: Any, structs: dict[str, Structure]) -> None:
+def scan_output_usage(api: Any, structs: Mapping[str, Structure]) -> None:
     for obj in api['objects']:
         for request in obj.get('requests', []):
             if 'out' not in request:
@@ -306,14 +305,14 @@ def scan_output_usage(api: Any, structs: dict[str, Structure]) -> None:
                     modified = True
 
 
-def scan_structures(api: Any) -> dict[str, Structure]:
-    structs: dict[str, Structure] = {struct['name']: Structure(struct) for struct in api['structures']}
+def scan_structures(api: Any) -> Mapping[str, Structure]:
+    structs: Mapping[str, Structure] = {struct['name']: Structure(struct) for struct in api['structures']}
     scan_body_usage(structs)
     scan_output_usage(api, structs)
     return structs
 
 
-def generate_structures(structs: dict[str, Structure], tfile: TextIO, sfile: TextIO) -> None:
+def generate_structures(structs: Mapping[str, Structure], tfile: TextIO, sfile: TextIO) -> None:
     gen = True
     while gen:
         gen = False
@@ -335,7 +334,7 @@ def is_no_auth(auth: str) -> bool:
     return variants == ['none'] or variants == ['signature']
 
 
-def generate_calls(api: Any, structs: dict[str, Structure], afile: TextIO) -> None:
+def generate_calls(api: Any, structs: Mapping[str, Structure], afile: TextIO) -> None:
     for obj in api['objects']:
         for request in obj.get('requests', []):
             if 'function' not in request:
@@ -346,10 +345,10 @@ def generate_calls(api: Any, structs: dict[str, Structure], afile: TextIO) -> No
             call_params = f'"{function}", location, method="{request["type"]}"'
 
             tail_params = ''
-            url_params: dict[str, str] = {}
+            url_params: Mapping[str, str] = {}
             flag_name: str | None = None
             flag_py_name: str | None = None
-            flags: list[str] = []
+            flags: Sequence[str] = []
             if 'params' in request:
                 for param in request['params']:
                     if 'name' not in param:
@@ -391,7 +390,7 @@ def generate_calls(api: Any, structs: dict[str, Structure], afile: TextIO) -> No
                     name = to_snake(inp['name'])
                     py_type = 'types.' + inp['struct']
                     if inp.get('array', False):
-                        py_type = f'list[{py_type}]'
+                        py_type = f'Sequence[{py_type}]'
                     params += f', {name}: {py_type}'
                     call_params += f', body={name}'
             params += tail_params
@@ -455,7 +454,7 @@ def generate_calls(api: Any, structs: dict[str, Structure], afile: TextIO) -> No
                 call_params += ', bodies=True'
 
             if result_array:
-                afile.write(params_wrap(f'\n{ind(1)}def {function}(%s) -> list[{result}]:\n', params, 2))
+                afile.write(params_wrap(f'\n{ind(1)}def {function}(%s) -> Sequence[{result}]:\n', params, 2))
             else:
                 afile.write(params_wrap(f'\n{ind(1)}def {function}(%s) -> {result}:\n', params, 2))
             afile.write(location)
@@ -467,14 +466,14 @@ def generate_calls(api: Any, structs: dict[str, Structure], afile: TextIO) -> No
             if result == 'IO':
                 afile.write(f"{ind(2)}return cast(IO, data)\n")
             elif result_array:
-                afile.write(f"{ind(2)}return structure_list(cast(list[Json], data), {result})\n")
+                afile.write(f"{ind(2)}return structure_list(data, {result})\n")
             else:
-                afile.write(f"{ind(2)}return {result}(cast(Json, data))\n")
+                afile.write(f"{ind(2)}return {result}(data)\n")
 
 
 PREAMBLE_TYPES = '''# This file is generated
 
-from typing import Literal, TypeAlias
+from typing import Literal, Mapping, Sequence, TypeAlias
 
 from moeralib.structure import Structure
 
@@ -491,13 +490,13 @@ from moeralib.structure import to_nullable_object_schema, array_schema
 
 PREAMBLE_CALLS = '''# This file is generated
 
-from typing import IO, cast
+from typing import IO, Sequence, cast
 from urllib.parse import quote_plus
 
 from moeralib.node import schemas
 from moeralib.node.caller import Caller
 from moeralib.node import types
-from moeralib.structure import Json, comma_separated_flags, structure_list
+from moeralib.structure import comma_separated_flags, structure_list
 
 
 class MoeraNode(Caller):

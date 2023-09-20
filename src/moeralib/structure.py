@@ -1,13 +1,11 @@
 from base64 import b64decode
-from typing import Any, TypeVar, get_type_hints, get_args, TypeAlias
+from typing import Any, TypeVar, get_type_hints, get_args, Mapping, List
 
 from camel_converter import dict_to_snake, to_camel
 
-Json: TypeAlias = dict[str, Any]
-
 
 class Structure:
-    def __init__(self, data: Json) -> None:
+    def __init__(self, data) -> None:
         data = dict_to_snake(data)
         for (attr, value) in data.items():
             if value is not None:
@@ -19,8 +17,8 @@ class Structure:
                         data[attr] = struct(value)
         self.__dict__.update(data)
 
-    def json(self) -> Json:
-        json: Json = {}
+    def json(self):
+        json = {}
         for name, value in self.__dict__.items():
             if name.startswith('_'):
                 continue
@@ -66,14 +64,14 @@ def to_nullable_object_schema(schema: Any) -> Any:
     return result
 
 
-def structure_or_none(data: Json | None, struct_type: type[StructType]) -> StructType | None:
+def structure_or_none(data, struct_type: type[StructType]) -> StructType | None:
     return struct_type(data) if data is not None else None
 
 
-def structure_list(data: list[Json], struct_type: type[StructType]) -> list[StructType]:
+def structure_list(data, struct_type: type[StructType]) -> List[StructType]:
     return [struct_type(item) for item in data]
 
 
-def comma_separated_flags(flags: dict[str, bool]) -> str | None:
+def comma_separated_flags(flags: Mapping[str, bool]) -> str | None:
     names = [name for name, value in flags.items() if value is not None]
     return ','.join(names) if len(names) > 0 else None
