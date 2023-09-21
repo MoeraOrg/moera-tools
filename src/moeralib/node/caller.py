@@ -81,8 +81,11 @@ class Caller:
     _auth_method: NodeAuth = NodeAuth.NONE
 
     def node_url(self, url: str) -> None:
-        if url.endswith('/'):
-            url = url[:-1]
+        if not url.startswith('http:') and not url.startswith('https:'):
+            url = 'https://' + url
+        url = url.removesuffix('/').removesuffix('/api')
+        if not url.endswith('/moera'):
+            url += '/moera'
         self._root = url
 
     def root_secret(self, secret: str) -> None:
@@ -97,6 +100,18 @@ class Caller:
     def auth_method(self, auth_method: NodeAuth) -> None:
         self._auth_method = auth_method
 
+    def no_auth(self) -> None:
+        self.auth_method(NodeAuth.NONE)
+
+    def auth(self) -> None:
+        self.auth_method(NodeAuth.PEER)
+
+    def auth_admin(self) -> None:
+        self.auth_method(NodeAuth.ADMIN)
+
+    def auth_root_admin(self) -> None:
+        self.auth_method(NodeAuth.ROOT_ADMIN)
+
     def call(self, name: str, location: str, params: Mapping[str, str | int | None] | None = None, method: str = 'GET',
              body: Structure | Sequence[Structure] | None = None, body_file: IO | None = None,
              body_file_type: str | None = None, auth: bool = True, schema: Any = None,
@@ -105,9 +120,9 @@ class Caller:
             body_encoded = None
             if body is not None:
                 if isinstance(body, Sequence):
-                    body_encoded = json.dumps([b.json() for b in body])
+                    body_encoded = [b.json() for b in body]
                 else:
-                    body_encoded = json.dumps(body.json())
+                    body_encoded = body.json()
 
             headers = {
                 'Accept': 'application/json',
@@ -129,7 +144,7 @@ class Caller:
                             raise ValueError('Root secret is not set')
                         bearer = 'secret:' + self._root_secret
             if bearer is not None:
-                headers['Authorization'] = f'Bearer ${bearer}'
+                headers['Authorization'] = f'Bearer {bearer}'
 
             if self._root is None:
                 raise ValueError('Node URL is not set')

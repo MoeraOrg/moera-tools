@@ -5,7 +5,10 @@ from camel_converter import dict_to_snake, to_camel
 
 
 class Structure:
-    def __init__(self, data) -> None:
+    def __init__(self, data=None) -> None:
+        if data is None:
+            return
+
         data = dict_to_snake(data)
         for (attr, value) in data.items():
             if value is not None:
