@@ -11,7 +11,7 @@ from moeralib import naming
 from moeralib.naming import MoeraNaming, node_name_parse
 from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeConnectionError
 from moeralib.node.types import Timestamp, DomainAttributes, DomainInfo, Credentials, ProfileAttributes, NameToRegister, \
-    RegisteredNameSecret
+    RegisteredNameSecret, TokenAttributes, TokenName
 
 PROGRAM_NAME = 'moctl'
 
@@ -27,6 +27,8 @@ class GlobalArgs:
     password: str
     email: str
     node_name: str
+    id: str
+    name: str | None
 
 
 config: ConfigParser
@@ -108,7 +110,7 @@ def parse_args() -> None:
     parser_credentials_set_password.add_argument('password', metavar='PASSWORD', help='password to set')
 
     parser_credentials_delete = subparsers_credentials.add_parser(
-        'delete', description='Delete credentials.', help='delete credentials')
+        'delete-password', aliases=['del-password'], description='Delete password.', help='delete password')
     parser_credentials_delete.set_defaults(routine=credentials_delete)
 
     parser_credentials_get_email = subparsers_credentials.add_parser(
@@ -148,6 +150,39 @@ def parse_args() -> None:
     parser_name_delete = subparsers_name.add_parser(
         'delete', description='Delete node name information.', help='delete node name information')
     parser_name_delete.set_defaults(routine=name_delete)
+
+    # token
+
+    parser_token = subparsers.add_parser(
+        'token', aliases=['t'], description='Managing authentication tokens.', help='manage authentication tokens')
+    parser_token.set_defaults(routine=lambda: routine_help(parser_token))
+    subparsers_token = parser_token.add_subparsers(title='operations', required=True)
+
+    parser_token_list = subparsers_token.add_parser(
+        'list', description='List tokens available.', help='list tokens available')
+    parser_token_list.set_defaults(routine=token_list)
+
+    parser_token_show = subparsers_token.add_parser(
+        'show', description='Show token details.', help='show token details')
+    parser_token_show.set_defaults(routine=token_show)
+    parser_token_show.add_argument('id', metavar='ID', help='token ID')
+
+    parser_token_create = subparsers_token.add_parser(
+        'create', description='Create a new token.', help='create a new token')
+    parser_token_create.set_defaults(routine=token_create)
+    parser_token_create.add_argument('password', metavar='PASSWORD', help='password to set')
+    parser_token_create.add_argument('-n', '--token-name', dest='name', default=None, help='token name')
+
+    parser_token_rename = subparsers_token.add_parser(
+        'rename', description='Rename a token.', help='rename a token')
+    parser_token_rename.set_defaults(routine=token_rename)
+    parser_token_rename.add_argument('id', metavar='ID', help='token ID')
+    parser_token_rename.add_argument('-n', '--token-name', dest='name', default=None, help='token name')
+
+    parser_token_delete = subparsers_token.add_parser(
+        'delete', description='Delete a token.', help='delete a token')
+    parser_token_delete.set_defaults(routine=token_delete)
+    parser_token_delete.add_argument('id', metavar='ID', help='token ID')
 
     args = cast(GlobalArgs, parser.parse_args())
 
@@ -349,7 +384,68 @@ def name_delete(node: MoeraNode) -> None:
     node.delete_node_name()
 
 
-# TODO manage tokens, manage settings, posting (?)
+def token_list(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    for info in node.get_tokens():
+        title = info.name if info.name is not None else info.token
+        line = f'{info.id}\t{title}'
+        if info.plugin_name is not None:
+            line += f'\t{info.plugin_name}'
+        print(line)
+
+
+def token_show(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    info = node.get_token_info(args.id)
+    print(f'ID:\t{info.id}')
+    print(f'token:\t{info.token}')
+    if info.name is not None:
+        print(f'name:\t{info.name}')
+    if info.permissions is not None:
+        print(f'permissions:\t{", ".join(info.permissions)}')
+    if info.plugin_name is not None:
+        print(f'plugin:\t{info.plugin_name}')
+    print(f'created at:\t{timestamp_to_str(info.created_at)}')
+    if info.deadline is not None:
+        print(f'deadline:\t{timestamp_to_str(info.deadline)}')
+    if info.last_used_at is not None:
+        print(f'last used at:\t{timestamp_to_str(info.last_used_at)}')
+    if info.last_used_browser is not None:
+        print(f'last used browser:\t{info.last_used_browser}')
+    if info.last_used_ip is not None:
+        print(f'last used IP:\t{info.last_used_ip}')
+
+
+def token_create(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    attrs = TokenAttributes()
+    attrs.login = 'admin'
+    attrs.password = args.password
+    attrs.name = args.name
+    info = node.create_token(attrs)
+    print(f'ID:\t{info.id}')
+    print(f'token:\t{info.token}')
+    if info.name is not None:
+        print(f'name:\t{info.name}')
+
+
+def token_rename(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    tname = TokenName()
+    tname.name = args.name
+    info = node.update_token(args.id, tname)
+    print(f'ID:\t{info.id}')
+    print(f'token:\t{info.token}')
+    if info.name is not None:
+        print(f'name:\t{info.name}')
+
+
+def token_delete(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    node.delete_token(args.id)
+
+
+# TODO manage settings
 
 
 def moctl() -> None:
