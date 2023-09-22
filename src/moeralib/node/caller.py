@@ -116,6 +116,7 @@ class Caller:
              body: Structure | Sequence[Structure] | None = None, body_file: IO | None = None,
              body_file_type: str | None = None, auth: bool = True, schema: Any = None,
              bodies: bool = False):
+        response = None
         try:
             body_encoded = None
             if body is not None:
@@ -170,9 +171,10 @@ class Caller:
                 return decode_bodies(name, response)
             else:
                 return response
-        except requests.exceptions.InvalidJSONError as e:
-            raise MoeraNodeError(name, 'Invalid server response') from e
         except requests.exceptions.RequestException as e:
             raise MoeraNodeConnectionError(str(e)) from e
-        except ValidationError as e:
-            raise MoeraNodeError(name, 'Invalid server response: ' + repr(e)) from e
+        except (requests.exceptions.InvalidJSONError, ValidationError) as e:
+            message = f'Invalid server response: {repr(e)}'
+            if response is not None:
+                message += f'\nResponse:\n{response}'
+            raise MoeraNodeError(name, message) from e

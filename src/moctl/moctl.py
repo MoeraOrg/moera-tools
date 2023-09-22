@@ -10,7 +10,8 @@ from urllib.parse import urlparse
 from moeralib import naming
 from moeralib.naming import MoeraNaming, node_name_parse
 from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeConnectionError
-from moeralib.node.types import Timestamp, DomainAttributes, DomainInfo, Credentials, ProfileAttributes
+from moeralib.node.types import Timestamp, DomainAttributes, DomainInfo, Credentials, ProfileAttributes, NameToRegister, \
+    RegisteredNameSecret
 
 PROGRAM_NAME = 'moctl'
 
@@ -25,6 +26,7 @@ class GlobalArgs:
     domain: str
     password: str
     email: str
+    node_name: str
 
 
 config: ConfigParser
@@ -64,6 +66,8 @@ def parse_args() -> None:
     parser.add_argument('-V', '--version', action='version', version=program_version)
     subparsers = parser.add_subparsers(title='subcommands', required=True)
 
+    # domain
+
     parser_domain = subparsers.add_parser(
         'domain', aliases=['dom'], description='Managing domains.', help='manage domains')
     parser_domain.set_defaults(routine=lambda: routine_help(parser_domain))
@@ -87,9 +91,11 @@ def parse_args() -> None:
     parser_domain_delete.set_defaults(routine=domain_delete)
     parser_domain_delete.add_argument('domain', metavar='DOMAIN', help='domain name')
 
+    # credentials
+
     parser_credentials = subparsers.add_parser(
         'credentials', aliases=['cr'], description='Managing credentials.', help='manage credentials')
-    parser_credentials.set_defaults(routine=lambda: routine_help(parser_domain))
+    parser_credentials.set_defaults(routine=lambda: routine_help(parser_credentials))
     subparsers_credentials = parser_credentials.add_subparsers(title='operations', required=True)
 
     parser_credentials_check = subparsers_credentials.add_parser(
@@ -101,6 +107,10 @@ def parse_args() -> None:
     parser_credentials_set_password.set_defaults(routine=credentials_set_password)
     parser_credentials_set_password.add_argument('password', metavar='PASSWORD', help='password to set')
 
+    parser_credentials_delete = subparsers_credentials.add_parser(
+        'delete', description='Delete credentials.', help='delete credentials')
+    parser_credentials_delete.set_defaults(routine=credentials_delete)
+
     parser_credentials_get_email = subparsers_credentials.add_parser(
         'get-email', description='Get e-mail address.', help='get e-mail address')
     parser_credentials_get_email.set_defaults(routine=credentials_get_email)
@@ -109,6 +119,35 @@ def parse_args() -> None:
         'set-email', description='Set e-mail address.', help='set e-mail address')
     parser_credentials_set_email.set_defaults(routine=credentials_set_email)
     parser_credentials_set_email.add_argument('email', metavar='ADDRESS', help='e-mail address to set')
+
+    # name
+
+    parser_name = subparsers.add_parser(
+        'name', aliases=['nm'], description='Managing node name.', help='manage node name')
+    parser_name.set_defaults(routine=lambda: routine_help(parser_name))
+    subparsers_name = parser_name.add_subparsers(title='operations', required=True)
+
+    parser_name_show = subparsers_name.add_parser(
+        'show', description='Show node name.', help='show node name')
+    parser_name_show.set_defaults(routine=name_show)
+
+    parser_name_status = subparsers_name.add_parser(
+        'status', description='Show node name operation status.', help='show node name operation status')
+    parser_name_status.set_defaults(routine=name_status)
+
+    parser_name_register = subparsers_name.add_parser(
+        'register', aliases=['reg'], description='Register node name.', help='register node name')
+    parser_name_register.set_defaults(routine=name_register)
+    parser_name_register.add_argument('node_name', metavar='NAME', help='name to register')
+
+    parser_name_assign = subparsers_name.add_parser(
+        'assign', aliases=['reg'], description='Assign an existing node name.', help='assign an existing node name')
+    parser_name_assign.set_defaults(routine=name_assign)
+    parser_name_assign.add_argument('node_name', metavar='NAME', help='name to assign')
+
+    parser_name_delete = subparsers_name.add_parser(
+        'delete', description='Delete node name information.', help='delete node name information')
+    parser_name_delete.set_defaults(routine=name_delete)
 
     args = cast(GlobalArgs, parser.parse_args())
 
@@ -207,7 +246,7 @@ def domain_list(node: MoeraNode) -> None:
     setup_root_admin_auth(node)
     domains = node.get_domains()
     for domain in domains:
-        print(f'{domain.name}\t{timestamp_to_str(domain.created_at)}')
+        print(f'{domain.node_id}\t{domain.name}\t{timestamp_to_str(domain.created_at)}')
 
 
 def domain_create(node: MoeraNode) -> None:
@@ -237,6 +276,11 @@ def credentials_set_password(node: MoeraNode) -> None:
     node.create_credentials(credentials)
 
 
+def credentials_delete(node: MoeraNode) -> None:
+    setup_root_admin_auth(node)
+    node.delete_credentials()
+
+
 def credentials_get_email(node: MoeraNode) -> None:
     setup_admin_auth(node, optional=True)
     profile = node.get_profile()
@@ -249,6 +293,63 @@ def credentials_set_email(node: MoeraNode) -> None:
     profile = ProfileAttributes()
     profile.email = args.email
     node.update_profile(profile)
+
+
+def name_show(node: MoeraNode) -> None:
+    info = node.get_node_name()
+    if info.name is not None:
+        print(info.name)
+
+
+def name_status(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    info = node.get_node_name()
+    if info.name is not None:
+        print(f'name:\t{info.name}')
+    if info.operation_status is not None:
+        status = f'status: {info.operation_status}'
+        if info.operation_status_updated is not None:
+            status += f' ({timestamp_to_str(info.operation_status_updated)})'
+        print(status)
+    if info.operation_error_code is not None:
+        print(f'error: {info.operation_error_message} ({info.operation_error_code})')
+
+
+def name_register(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    reg = NameToRegister()
+    reg.name = args.node_name
+    info = node.create_node_name(reg)
+    if info.mnemonic is not None:
+        i = 1
+        for word in info.mnemonic:
+            print(f'{i:2}. {word}')
+            i += 1
+
+
+def name_assign(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    secret = RegisteredNameSecret()
+    secret.name = args.node_name
+    secret.mnemonic = []
+    if sys.stdin.isatty():
+        print('Enter 24 secret words:')
+    for n in range(24):
+        try:
+            secret.mnemonic.append(input())
+        except EOFError:
+            break
+    if len(secret.mnemonic) != 24:
+        error('Wrong secret words')
+    node.update_node_name(secret)
+
+
+def name_delete(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    node.delete_node_name()
+
+
+# TODO manage tokens, manage settings, posting (?)
 
 
 def moctl() -> None:

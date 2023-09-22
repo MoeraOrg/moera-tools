@@ -591,7 +591,7 @@ class MoeraNode(Caller):
 
     def get_node_name(self) -> types.NodeNameInfo:
         location = "/node-name"
-        data = self.call("get_node_name", location, method="GET", auth=False, schema=schemas.NODE_NAME_INFO_SCHEMA)
+        data = self.call("get_node_name", location, method="GET", schema=schemas.NODE_NAME_INFO_SCHEMA)
         return types.NodeNameInfo(data)
 
     def create_node_name(self, name_to_register: types.NameToRegister) -> types.RegisteredNameSecret:
