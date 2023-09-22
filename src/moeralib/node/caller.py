@@ -74,7 +74,7 @@ class NodeAuth(Enum):
 
 
 class Caller:
-    _root: str | None = None
+    root: str | None = None
     _root_secret: str | None = None
     _token: str | None = None
     _carte: str | None = None
@@ -86,7 +86,7 @@ class Caller:
         url = url.removesuffix('/').removesuffix('/api')
         if not url.endswith('/moera'):
             url += '/moera'
-        self._root = url
+        self.root = url
 
     def root_secret(self, secret: str) -> None:
         self._root_secret = secret
@@ -146,12 +146,12 @@ class Caller:
             if bearer is not None:
                 headers['Authorization'] = f'Bearer {bearer}'
 
-            if self._root is None:
+            if self.root is None:
                 raise ValueError('Node URL is not set')
 
             r = requests.request(
                 method=method,
-                url=self._root + '/api' + location,
+                url=self.root + '/api' + location,
                 params=params,
                 headers=headers,
                 json=body_encoded,

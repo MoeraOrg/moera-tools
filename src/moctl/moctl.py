@@ -1,8 +1,11 @@
 import argparse
+import os.path
 import sys
+from configparser import ConfigParser
 from importlib.metadata import version
 from time import strftime, localtime
 from typing import Callable, cast
+from urllib.parse import urlparse
 
 from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeConnectionError
 from moeralib.node.types import Timestamp, DomainAttributes, DomainInfo
@@ -18,6 +21,7 @@ class GlobalArgs:
     domain: str
 
 
+config: ConfigParser
 args: GlobalArgs
 
 
@@ -26,13 +30,21 @@ def error(s: str) -> None:
     sys.exit(1)
 
 
+def parse_config() -> None:
+    global config
+
+    config = ConfigParser(default_section='general')
+    config.read(os.path.expanduser("~/.moerc"))
+
+
 def parse_args() -> None:
     global args
 
     parser = argparse.ArgumentParser(prog=PROGRAM_NAME, description='Moera server management.')
     parser.set_defaults(routine=lambda: routine_help(parser))
     program_version = '%s (moera-tools) %s' % (PROGRAM_NAME, version('moera-tools'))
-    parser.add_argument('-H', '--host', dest='host_url', default=None, help='host URL')
+    parser.add_argument('-H', '--host', dest='host_url', default=config.get('general', 'host', fallback=None),
+                        help='host URL')
     parser.add_argument('-S', '--root-secret', dest='root_secret', default=None, help='root admin secret')
     parser.add_argument('-T', '--token', dest='token', default=None, help='admin token')
     parser.add_argument('-V', '--version', action='version', version=program_version)
@@ -50,7 +62,7 @@ def parse_args() -> None:
     parser_domain_get = subparsers_domain.add_parser(
         'get', description='Show domain info.', help='show domain info')
     parser_domain_get.set_defaults(routine=domain_get)
-    parser_domain_get.add_argument('domain', metavar='<domain>', help='domain name')
+    parser_domain_get.add_argument('domain', metavar='<domain>', nargs='?', default=None, help='domain name')
 
     parser_domain_create = subparsers_domain.add_parser(
         'create', description='Create a domain.', help='create a domain')
@@ -73,27 +85,56 @@ def routine_help(parser: argparse.ArgumentParser) -> None:
     sys.exit(1)
 
 
+def parameter_for(url: str, param_name: str) -> str | None:
+    netloc = urlparse(url).netloc
+    for suffix in config.sections():
+        if netloc.endswith(suffix) and param_name in config[suffix]:
+            return config[suffix][param_name]
+    return None
+
+
+def root_secret_for(url: str) -> str | None:
+    if args.root_secret is not None:
+        return args.root_secret
+    return parameter_for(url, 'secret')
+
+
 def setup_root_admin_auth(node: MoeraNode) -> None:
-    if args.root_secret is None:
+    root_secret = root_secret_for(node.root)
+    if root_secret is None:
         error('Root admin secret (-S, --root-secret) should be set')
         sys.exit(1)
-    node.root_secret(args.root_secret)
+    node.root_secret(root_secret)
     node.auth_root_admin()
 
 
-def setup_admin_auth(node: MoeraNode) -> None:
+def token_for(url: str) -> str | None:
     if args.token is not None:
-        node.token(args.token)
+        return args.token
+    return parameter_for(url, 'token')
+
+
+def setup_admin_auth(node: MoeraNode) -> None:
+    token = token_for(node.root)
+    if token is not None:
+        node.token(token)
         node.auth_admin()
-    elif args.root_secret is not None:
-        setup_root_admin_auth(node)
     else:
-        error('Admin token (-T, --token) or root admin secret (-S, --root-secret) should be set')
-        sys.exit(1)
+        root_secret = root_secret_for(node.root)
+        if root_secret is not None:
+            node.root_secret(root_secret)
+            node.auth_root_admin()
+        else:
+            error('Admin token (-T, --token) or root admin secret (-S, --root-secret) should be set')
+            sys.exit(1)
 
 
 def timestamp_to_str(ts: Timestamp) -> str:
     return strftime("%Y-%m-%d %H:%M:%S", localtime(ts))
+
+
+def hostname(url: str) -> str:
+    return urlparse(url).netloc.split(':')[0]
 
 
 def print_domain(domain: DomainInfo) -> None:
@@ -105,7 +146,8 @@ def print_domain(domain: DomainInfo) -> None:
 def domain_get() -> None:
     node = MoeraNode()
     node.node_url(args.host_url)
-    print_domain(node.get_domain(args.domain))
+    domain_name = args.domain if args.domain is not None else hostname(node.root)
+    print_domain(node.get_domain(domain_name))
 
 
 def domain_list() -> None:
@@ -136,6 +178,7 @@ def domain_delete() -> None:
 
 def moctl() -> None:
     try:
+        parse_config()
         parse_args()
         args.routine()
     except (MoeraNodeConnectionError, MoeraNodeError) as e:
