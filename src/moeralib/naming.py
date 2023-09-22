@@ -1,4 +1,4 @@
-from typing import Any, Literal, TypeAlias, cast, Sequence
+from typing import Any, Literal, TypeAlias, cast, Sequence, Tuple
 
 import requests
 from jsonschema import validate
@@ -216,3 +216,18 @@ class MoeraNaming:
     def get_all_newer(self, at: Timestamp, page: int, size: int) -> list[RegisteredNameInfo]:
         return structure_list(self.call('getAllNewer', [at, page, size], REGISTERED_NAME_INFO_LIST_SCHEMA),
                               RegisteredNameInfo)
+
+
+def node_name_parse(node_name: str) -> Tuple[str, int]:
+    name = node_name
+    generation = 0
+
+    pos = node_name.rfind('_')
+    if pos >= 0:
+        (name, gen) = (node_name[0:pos], node_name[pos + 1:])
+        try:
+            generation = int(gen)
+        except ValueError:
+            raise ValueError(f'invalid generation: "{gen}"')
+
+    return name, generation

@@ -2,13 +2,13 @@ import argparse
 import sys
 from importlib.metadata import version
 from time import time, strftime, localtime
-from typing import cast
+from typing import cast, NoReturn
 
 from dateutil.parser import parse as parse_date
 
 from moeralib import naming
 from moeralib.naming import RegisteredNameInfo, MAIN_SERVER, DEV_SERVER, MoeraNamingConnectionError, MoeraNamingError, \
-    Timestamp, SigningKeyInfo
+    Timestamp, SigningKeyInfo, node_name_parse
 
 PROGRAM_NAME = 'moname'
 PAGE_SIZE = 100
@@ -29,7 +29,7 @@ class GlobalArgs:
 args: GlobalArgs
 
 
-def error(s: str) -> None:
+def error(s: str) -> NoReturn:
     print('%s: error: %s' % (PROGRAM_NAME, s), file=sys.stderr)
     sys.exit(1)
 
@@ -64,16 +64,10 @@ def parse_args() -> None:
 
     if not args.list:
         if args.name != '':
-            pos = args.name.rfind('_')
-            if pos >= 0:
-                (name, gen) = (args.name[0:pos], args.name[pos + 1:])
-                args.name = name
-                try:
-                    args.generation = int(gen)
-                except ValueError:
-                    error('invalid generation: "%s"' % gen)
-            else:
-                args.generation = 0
+            try:
+                (args.name, args.generation) = node_name_parse(args.name)
+            except ValueError as e:
+                error(str(e))
         else:
             parser.print_usage()
             sys.exit(1)
@@ -94,7 +88,7 @@ def str_to_timestamp(s: str) -> Timestamp:
 
 
 def timestamp_to_str(ts: Timestamp) -> str:
-    return strftime("%Y-%m-%d %H:%M:%S", localtime(ts))
+    return strftime('%Y-%m-%d %H:%M:%S', localtime(ts))
 
 
 def print_info(info: RegisteredNameInfo) -> None:
