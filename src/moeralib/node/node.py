@@ -3,10 +3,9 @@
 from typing import IO, Sequence, cast
 from urllib.parse import quote_plus
 
-from moeralib.node import schemas
-from moeralib.node.caller import Caller
-from moeralib.node import types
-from moeralib.structure import comma_separated_flags, structure_list
+from . import types, schemas
+from .caller import Caller
+from ..structure import comma_separated_flags, structure_list
 
 
 class MoeraNode(Caller):

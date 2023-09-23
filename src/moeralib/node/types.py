@@ -2,7 +2,7 @@
 
 from typing import Literal, Mapping, Sequence, TypeAlias
 
-from moeralib.structure import Structure
+from ..structure import Structure
 
 Timestamp: TypeAlias = int
 PrincipalValue: TypeAlias = str

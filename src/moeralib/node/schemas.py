@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from moeralib.structure import to_nullable_object_schema, array_schema
+from ..structure import to_nullable_object_schema, array_schema
 
 COMMENT_OPERATIONS_SCHEMA: Any = {
     "type": "object",

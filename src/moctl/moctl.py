@@ -8,16 +8,18 @@ from typing import Callable, cast, NoReturn
 from urllib.parse import urlparse
 
 from moeralib import naming
-from moeralib.naming import MoeraNaming, node_name_parse
-from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeConnectionError
-from moeralib.node.types import Timestamp, DomainAttributes, DomainInfo, Credentials, ProfileAttributes, NameToRegister, \
-    RegisteredNameSecret, TokenAttributes, TokenName
+from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeConnectionError, moera_root
+from moeralib.node.types import (
+    Timestamp, DomainAttributes, DomainInfo, Credentials, ProfileAttributes, NameToRegister, RegisteredNameSecret,
+    TokenAttributes, TokenName
+)
 
 PROGRAM_NAME = 'moctl'
 
 
 class GlobalArgs:
     naming_server: str
+    provider: str | None
     host_url: str | None
     host_name: str | None
     root_secret: str | None
@@ -40,30 +42,79 @@ def error(s: str) -> NoReturn:
     sys.exit(1)
 
 
-def parse_config() -> None:
+def resolve_host_name(naming_server: str) -> None:
+    try:
+        args.host_url = naming.resolve(args.host_name, naming_server)
+        if args.host_url is None:
+            error(f'Node name not found: {args.host_name}')
+    except ValueError as e:
+        error(str(e))
+
+
+def naming_server_url(url: str | None) -> str:
+    if url is None or url == 'main':
+        return naming.MAIN_SERVER
+    if url == 'dev' or url == 'development':
+        return naming.DEV_SERVER
+    return url
+
+
+def configure_provider() -> None:
     global config
 
-    config = ConfigParser(default_section='general')
+    config = ConfigParser(default_section='default')
     config.read(os.path.expanduser("~/.moerc"))
+
+    if args.provider is None:
+        if args.host_url is None and args.host_name is not None:
+            if args.naming_server is not None:
+                naming_server = args.naming_server
+            else:
+                naming_server = naming_server_url(config.get('default', 'naming-server'))
+            resolve_host_name(naming_server)
+        if args.host_url is not None:
+            netloc = urlparse(moera_root(args.host_url)).netloc
+            for provider in config.sections():
+                if 'domain' in config[provider] and netloc.endswith(config[provider]['domain']):
+                    args.provider = provider
+                    break
+    if args.provider is None:
+        for provider in config.sections():
+            if provider != 'default':
+                args.provider = provider
+                break
+    if args.provider is None:
+        return
+    if args.provider not in config.sections():
+        error("Provider is not found in the configuration file: " + args.provider)
+
+    if args.naming_server is None:
+        args.naming_server = naming_server_url(config[args.provider].get('naming-server'))
+    if args.host_name is None:
+        args.host_name = config[args.provider].get('node-name')
+    if args.host_url is None:
+        args.host_url = config[args.provider].get('node-url')
+    if args.root_secret is None:
+        args.root_secret = config[args.provider].get('secret')
+    if args.token is None:
+        args.token = config[args.provider].get('token')
 
 
 def parse_args() -> None:
     global args
 
     parser = argparse.ArgumentParser(prog=PROGRAM_NAME, description='Moera server management.')
-    parser.set_defaults(routine=lambda: routine_help(parser),
-                        naming_server=config.get('general', 'naming-server', fallback=naming.MAIN_SERVER))
+    parser.set_defaults(routine=lambda: routine_help(parser))
     program_version = '%s (moera-tools) %s' % (PROGRAM_NAME, version('moera-tools'))
     group = parser.add_mutually_exclusive_group()
     parser.add_argument('-d', '--dev', action='store_const', dest='naming_server', const=naming.DEV_SERVER,
                         help='use the development naming server')
-    group.add_argument('-H', '--host', dest='host_url', metavar='URL',
-                       default=config.get('general', 'host', fallback=None), help='node hostname/URL')
-    group.add_argument('-N', '--name', dest='host_name', metavar='NAME',
-                       default=config.get('general', 'name', fallback=None), help='node name')
+    group.add_argument('-H', '--host', dest='host_url', metavar='URL', default=None, help='node hostname/URL')
+    group.add_argument('-N', '--name', dest='host_name', metavar='NAME', default=None, help='node name')
     parser.add_argument('-s', '--naming-server', dest='naming_server', metavar='URL', help='naming server URL')
     parser.add_argument('-S', '--root-secret', dest='root_secret', metavar='SECRET', default=None,
                         help='root admin secret')
+    parser.add_argument('-P', '--provider', dest='provider', default=None, help='use one of configured providers')
     parser.add_argument('-T', '--token', dest='token', default=None, help='admin token')
     parser.add_argument('-V', '--version', action='version', version=program_version)
     subparsers = parser.add_subparsers(title='subcommands', required=True)
@@ -186,8 +237,10 @@ def parse_args() -> None:
 
     args = cast(GlobalArgs, parser.parse_args())
 
-    if args.host_name is not None:
-        resolve_host_name()
+    configure_provider()
+
+    if args.host_url is None and args.host_name is not None:
+        resolve_host_name(args.naming_server)
     if args.host_url is None:
         error('host is not set')
 
@@ -197,63 +250,28 @@ def routine_help(parser: argparse.ArgumentParser) -> None:
     sys.exit(1)
 
 
-def resolve_host_name() -> None:
-    try:
-        (name, gen) = node_name_parse(args.host_name)
-    except ValueError as e:
-        error(str(e))
-    naming = MoeraNaming(args.naming_server)
-    info = naming.get_current(name, gen)
-    if info is None:
-        error(f'Node name not found: {args.host_name}')
-    args.host_url = info.node_uri
-
-
 def run() -> None:
     node = MoeraNode()
     node.node_url(args.host_url)
     args.routine(node)
 
 
-def parameter_for(url: str, param_name: str) -> str | None:
-    netloc = urlparse(url).netloc
-    for suffix in config.sections():
-        if netloc.endswith(suffix) and param_name in config[suffix]:
-            return config[suffix][param_name]
-    return None
-
-
-def root_secret_for(url: str) -> str | None:
-    if args.root_secret is not None:
-        return args.root_secret
-    return parameter_for(url, 'secret')
-
-
 def setup_root_admin_auth(node: MoeraNode, optional: bool = False) -> None:
-    root_secret = root_secret_for(node.root)
-    if root_secret is None:
+    if args.root_secret is None:
         if optional:
             return
         error('Root admin secret (-S, --root-secret) should be set')
-    node.root_secret(root_secret)
+    node.root_secret(args.root_secret)
     node.auth_root_admin()
 
 
-def token_for(url: str) -> str | None:
-    if args.token is not None:
-        return args.token
-    return parameter_for(url, 'token')
-
-
 def setup_admin_auth(node: MoeraNode, optional: bool = False) -> None:
-    token = token_for(node.root)
-    if token is not None:
-        node.token(token)
+    if args.token is not None:
+        node.token(args.token)
         node.auth_admin()
     else:
-        root_secret = root_secret_for(node.root)
-        if root_secret is not None:
-            node.root_secret(root_secret)
+        if args.root_secret is not None:
+            node.root_secret(args.root_secret)
             node.auth_root_admin()
         else:
             if optional:
@@ -417,7 +435,6 @@ def token_show(node: MoeraNode) -> None:
 
 
 def token_create(node: MoeraNode) -> None:
-    setup_admin_auth(node)
     attrs = TokenAttributes()
     attrs.login = 'admin'
     attrs.password = args.password
@@ -450,7 +467,6 @@ def token_delete(node: MoeraNode) -> None:
 
 def moctl() -> None:
     try:
-        parse_config()
         parse_args()
         run()
     except (MoeraNodeConnectionError, MoeraNodeError) as e:

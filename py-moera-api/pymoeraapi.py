@@ -475,7 +475,7 @@ PREAMBLE_TYPES = '''# This file is generated
 
 from typing import Literal, Mapping, Sequence, TypeAlias
 
-from moeralib.structure import Structure
+from ..structure import Structure
 
 Timestamp: TypeAlias = int
 PrincipalValue: TypeAlias = str
@@ -485,7 +485,7 @@ PREAMBLE_SCHEMAS = '''# This file is generated
 
 from typing import Any
 
-from moeralib.structure import to_nullable_object_schema, array_schema
+from ..structure import to_nullable_object_schema, array_schema
 '''
 
 PREAMBLE_CALLS = '''# This file is generated
@@ -493,10 +493,9 @@ PREAMBLE_CALLS = '''# This file is generated
 from typing import IO, Sequence, cast
 from urllib.parse import quote_plus
 
-from moeralib.node import schemas
-from moeralib.node.caller import Caller
-from moeralib.node import types
-from moeralib.structure import comma_separated_flags, structure_list
+from . import types, schemas
+from .caller import Caller
+from ..structure import comma_separated_flags, structure_list
 
 
 class MoeraNode(Caller):

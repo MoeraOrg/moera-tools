@@ -7,9 +7,9 @@ import requests
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 
-from moeralib.node import schemas
-from moeralib.node.types import Result, BodyFormat, SourceFormat, Body
-from moeralib.structure import Structure
+from . import schemas
+from .types import Result, BodyFormat, SourceFormat, Body
+from ..structure import Structure
 
 
 class MoeraNodeError(Exception):
@@ -81,12 +81,7 @@ class Caller:
     _auth_method: NodeAuth = NodeAuth.NONE
 
     def node_url(self, url: str) -> None:
-        if not url.startswith('http:') and not url.startswith('https:'):
-            url = 'https://' + url
-        url = url.removesuffix('/').removesuffix('/api')
-        if not url.endswith('/moera'):
-            url += '/moera'
-        self.root = url
+        self.root = moera_root(url)
 
     def root_secret(self, secret: str) -> None:
         self._root_secret = secret
@@ -178,3 +173,12 @@ class Caller:
             if response is not None:
                 message += f'\nResponse:\n{response}'
             raise MoeraNodeError(name, message) from e
+
+
+def moera_root(url: str) -> str:
+    if not url.startswith('http:') and not url.startswith('https:'):
+        url = 'https://' + url
+    url = url.removesuffix('/').removesuffix('/api')
+    if not url.endswith('/moera'):
+        url += '/moera'
+    return url
