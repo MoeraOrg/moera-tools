@@ -11,7 +11,7 @@ from moeralib import naming
 from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeConnectionError, moera_root
 from moeralib.node.types import (
     Timestamp, DomainAttributes, DomainInfo, Credentials, ProfileAttributes, NameToRegister, RegisteredNameSecret,
-    TokenAttributes, TokenName
+    TokenAttributes, TokenName, SettingMetaInfo, SettingInfo
 )
 
 PROGRAM_NAME = 'moctl'
@@ -31,6 +31,11 @@ class GlobalArgs:
     node_name: str
     id: str
     name: str | None
+    description: bool
+    defaults: bool
+    modified: bool
+    type: bool
+    prefix: str | None
 
 
 config: ConfigParser
@@ -234,6 +239,24 @@ def parse_args() -> None:
         'delete', description='Delete a token.', help='delete a token')
     parser_token_delete.set_defaults(routine=token_delete)
     parser_token_delete.add_argument('id', metavar='ID', help='token ID')
+
+    # option
+
+    parser_option = subparsers.add_parser(
+        'option', aliases=['op'], description='Changing options.', help='change options')
+    parser_option.set_defaults(routine=lambda: routine_help(parser_option))
+    subparsers_option = parser_option.add_subparsers(title='operations', required=True)
+
+    parser_option_show = subparsers_option.add_parser(
+        'show', description='Display all options.', help='display all options')
+    parser_option_show.set_defaults(routine=option_show)
+    parser_option_show.add_argument('-d', '--description', dest='description', action='store_true',
+                                    help='show option descriptions')
+    parser_option_show.add_argument('--defaults', dest='defaults', action='store_true', help='show default values')
+    parser_option_show.add_argument('-m', '--modified', dest='modified', action='store_true',
+                                    help='show modified values only')
+    parser_option_show.add_argument('--prefix', dest='prefix', default=None, help='filter by name prefix')
+    parser_option_show.add_argument('-t', '--type', dest='type', action='store_true', help='show type information')
 
     args = cast(GlobalArgs, parser.parse_args())
 
@@ -460,6 +483,61 @@ def token_rename(node: MoeraNode) -> None:
 def token_delete(node: MoeraNode) -> None:
     setup_admin_auth(node)
     node.delete_token(args.id)
+
+
+def option_show(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    metadata = node.get_node_settings_metadata()
+    meta_map: dict[str, SettingMetaInfo] = {m.name: m for m in metadata}
+    if args.defaults:
+        options = []
+        for meta in metadata:
+            if args.prefix is not None and not meta.name.startswith(args.prefix):
+                continue
+            option = SettingInfo()
+            option.name = meta.name
+            option.value = meta.default_value
+            options.append(option)
+    else:
+        options = node.get_node_settings(args.prefix)
+    for option in options:
+        meta = meta_map.get(option.name)
+        privileged = ' '
+        changed = ' '
+        if meta is not None:
+            if meta.privileged:
+                privileged = 'P'
+            if meta.default_value != option.value:
+                changed = '*'
+            elif args.modified:
+                continue
+        value = option.value.replace('\n', '\\n')
+        line = f'{privileged}{changed} {option.name} = {value}'
+        if meta is not None:
+            if args.type:
+                line = f'{line:<40}\t({format_type_info(meta)})'
+            if args.description:
+                line += f'\t{meta.title}'
+        print(line)
+
+
+def format_type_info(meta: SettingMetaInfo) -> str:
+    type_info = meta.type
+    if meta.modifiers.format is not None:
+        type_info += f':{meta.modifiers.format}'
+    if meta.modifiers.min is not None:
+        type_info += f', min={meta.modifiers.min}'
+    if meta.modifiers.max is not None:
+        type_info += f', max={meta.modifiers.max}'
+    if meta.modifiers.multiline is True:
+        type_info += ', multiline'
+    if meta.modifiers.never is True:
+        type_info += ', never'
+    if meta.modifiers.always is True:
+        type_info += ', always'
+    if meta.modifiers.principals is not None:
+        type_info += f', [{", ".join(meta.modifiers.principals)}]'
+    return type_info
 
 
 # TODO manage settings
