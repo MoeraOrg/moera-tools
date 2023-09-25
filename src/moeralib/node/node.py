@@ -1,6 +1,6 @@
 # This file is generated
 
-from typing import IO, Sequence, cast
+from typing import IO, List, Sequence, cast
 from urllib.parse import quote_plus
 
 from . import types, schemas
@@ -10,7 +10,7 @@ from ..structure import comma_separated_flags, structure_list
 
 class MoeraNode(Caller):
 
-    def search_activity_reactions(self, filter: types.ActivityReactionFilter) -> Sequence[types.ActivityReactionInfo]:
+    def search_activity_reactions(self, filter: types.ActivityReactionFilter) -> List[types.ActivityReactionInfo]:
         location = "/activity/reactions/search"
         data = self.call(
             "search_activity_reactions", location, method="GET", body=filter,
@@ -34,7 +34,7 @@ class MoeraNode(Caller):
         )
         return types.RemoteReactionVerificationInfo(data)
 
-    def get_avatars(self) -> Sequence[types.AvatarInfo]:
+    def get_avatars(self) -> List[types.AvatarInfo]:
         location = "/avatars"
         data = self.call("get_avatars", location, method="GET", auth=False, schema=schemas.AVATAR_INFO_ARRAY_SCHEMA)
         return structure_list(data, types.AvatarInfo)
@@ -54,7 +54,7 @@ class MoeraNode(Caller):
         data = self.call("delete_avatar", location, method="DELETE", schema=schemas.RESULT_SCHEMA)
         return types.Result(data)
 
-    def reorder_avatars(self, order: types.AvatarsOrdered) -> Sequence[types.AvatarOrdinal]:
+    def reorder_avatars(self, order: types.AvatarsOrdered) -> List[types.AvatarOrdinal]:
         location = "/avatars/reorder"
         data = self.call(
             "reorder_avatars", location, method="POST", body=order, schema=schemas.AVATAR_ORDINAL_ARRAY_SCHEMA
@@ -78,7 +78,7 @@ class MoeraNode(Caller):
         data = self.call("unblock_instant", location, method="DELETE", schema=schemas.RESULT_SCHEMA)
         return types.Result(data)
 
-    def search_blocked_instants(self, filter: types.BlockedInstantFilter) -> Sequence[types.BlockedInstantInfo]:
+    def search_blocked_instants(self, filter: types.BlockedInstantFilter) -> List[types.BlockedInstantInfo]:
         location = "/blocked-instants/search"
         data = self.call(
             "search_blocked_instants", location, method="POST", body=filter,
@@ -101,7 +101,7 @@ class MoeraNode(Caller):
         data = self.call("unblock_user", location, method="DELETE", schema=schemas.RESULT_SCHEMA)
         return types.Result(data)
 
-    def search_blocked_users(self, filter: types.BlockedUserFilter) -> Sequence[types.BlockedUserInfo]:
+    def search_blocked_users(self, filter: types.BlockedUserFilter) -> List[types.BlockedUserInfo]:
         location = "/people/blocked-users/search"
         data = self.call(
             "search_blocked_users", location, method="POST", body=filter, schema=schemas.BLOCKED_USER_INFO_ARRAY_SCHEMA
@@ -120,7 +120,7 @@ class MoeraNode(Caller):
         data = self.call("get_blocked_by_user", location, method="GET", schema=schemas.BLOCKED_BY_USER_INFO_SCHEMA)
         return types.BlockedByUserInfo(data)
 
-    def search_blocked_by_users(self, filter: types.BlockedByUserFilter) -> Sequence[types.BlockedByUserInfo]:
+    def search_blocked_by_users(self, filter: types.BlockedByUserFilter) -> List[types.BlockedByUserInfo]:
         location = "/people/blocked-by-users/search"
         data = self.call(
             "search_blocked_by_users", location, method="POST", body=filter,
@@ -184,7 +184,7 @@ class MoeraNode(Caller):
         data = self.call("delete_comment", location, method="DELETE", schema=schemas.COMMENT_TOTAL_INFO_SCHEMA)
         return types.CommentTotalInfo(data)
 
-    def get_postings_attached_to_comment(self, posting_id: str, comment_id: str) -> Sequence[types.PostingInfo]:
+    def get_postings_attached_to_comment(self, posting_id: str, comment_id: str) -> List[types.PostingInfo]:
         location = "/postings/{postingId}/comments/{commentId}/attached".format(
             postingId=quote_plus(posting_id), commentId=quote_plus(comment_id)
         )
@@ -194,7 +194,7 @@ class MoeraNode(Caller):
         )
         return structure_list(data, types.PostingInfo)
 
-    def get_comment_revisions(self, posting_id: str, comment_id: str) -> Sequence[types.CommentRevisionInfo]:
+    def get_comment_revisions(self, posting_id: str, comment_id: str) -> List[types.CommentRevisionInfo]:
         location = "/postings/{postingId}/comments/{commentId}/revisions".format(
             postingId=quote_plus(posting_id), commentId=quote_plus(comment_id)
         )
@@ -281,7 +281,7 @@ class MoeraNode(Caller):
         )
         return types.ReactionTotalsInfo(data)
 
-    def get_contacts(self, query: str | None = None, limit: int | None = None) -> Sequence[types.ContactInfo]:
+    def get_contacts(self, query: str | None = None, limit: int | None = None) -> List[types.ContactInfo]:
         location = "/people/contacts".format()
         params = {"query": query, "limit": limit}
         data = self.call(
@@ -320,7 +320,7 @@ class MoeraNode(Caller):
         data = self.call("reset_credentials", location, method="POST", auth=False, schema=schemas.EMAIL_HINT_SCHEMA)
         return types.EmailHint(data)
 
-    def get_deleted_postings(self, page: int | None = None, limit: int | None = None) -> Sequence[types.PostingInfo]:
+    def get_deleted_postings(self, page: int | None = None, limit: int | None = None) -> List[types.PostingInfo]:
         location = "/deleted-postings".format()
         params = {"page": page, "limit": limit}
         data = self.call(
@@ -345,7 +345,7 @@ class MoeraNode(Caller):
 
     def get_delete_posting_revisions(
         self, posting_id: str, limit: int | None = None
-    ) -> Sequence[types.PostingRevisionInfo]:
+    ) -> List[types.PostingRevisionInfo]:
         location = "/deleted-postings/{postingId}/revisions".format(postingId=quote_plus(posting_id))
         params = {"limit": limit}
         data = self.call(
@@ -374,7 +374,7 @@ class MoeraNode(Caller):
         )
         return types.PostingRevisionInfo(data)
 
-    def get_domains(self) -> Sequence[types.DomainInfo]:
+    def get_domains(self) -> List[types.DomainInfo]:
         location = "/domains"
         data = self.call("get_domains", location, method="GET", schema=schemas.DOMAIN_INFO_ARRAY_SCHEMA)
         return structure_list(data, types.DomainInfo)
@@ -411,7 +411,7 @@ class MoeraNode(Caller):
     def get_drafts(
         self, draft_type: types.DraftType, node_name: str, posting_id: str | None = None, comment_id: str | None = None,
         page: int | None = None, limit: int | None = None
-    ) -> Sequence[types.DraftInfo]:
+    ) -> List[types.DraftInfo]:
         location = "/drafts".format()
         params = {
             "draftType": draft_type, "nodeName": node_name, "postingId": posting_id, "commentId": comment_id,
@@ -451,7 +451,7 @@ class MoeraNode(Caller):
         data = self.call("get_features", location, method="GET", schema=schemas.FEATURES_SCHEMA)
         return types.Features(data)
 
-    def get_feeds(self) -> Sequence[types.FeedInfo]:
+    def get_feeds(self) -> List[types.FeedInfo]:
         location = "/feeds"
         data = self.call("get_feeds", location, method="GET", schema=schemas.FEED_INFO_ARRAY_SCHEMA)
         return structure_list(data, types.FeedInfo)
@@ -481,7 +481,7 @@ class MoeraNode(Caller):
         )
         return types.FeedSliceInfo(data)
 
-    def get_friend_groups(self) -> Sequence[types.FriendGroupInfo]:
+    def get_friend_groups(self) -> List[types.FriendGroupInfo]:
         location = "/people/friends/groups"
         data = self.call("get_friend_groups", location, method="GET", schema=schemas.FRIEND_GROUP_INFO_ARRAY_SCHEMA)
         return structure_list(data, types.FriendGroupInfo)
@@ -510,7 +510,7 @@ class MoeraNode(Caller):
         data = self.call("delete_friend_group", location, method="DELETE", schema=schemas.RESULT_SCHEMA)
         return types.Result(data)
 
-    def get_friends(self, group_id: str | None = None) -> Sequence[types.FriendInfo]:
+    def get_friends(self, group_id: str | None = None) -> List[types.FriendInfo]:
         location = "/people/friends".format()
         params = {"groupId": group_id}
         data = self.call("get_friends", location, method="GET", params=params, schema=schemas.FRIEND_INFO_ARRAY_SCHEMA)
@@ -521,14 +521,14 @@ class MoeraNode(Caller):
         data = self.call("get_friend", location, method="GET", schema=schemas.FRIEND_INFO_SCHEMA)
         return types.FriendInfo(data)
 
-    def update_friends(self, friends: Sequence[types.FriendDescription]) -> Sequence[types.FriendInfo]:
+    def update_friends(self, friends: List[types.FriendDescription]) -> List[types.FriendInfo]:
         location = "/people/friends"
         data = self.call(
             "update_friends", location, method="PUT", body=friends, schema=schemas.FRIEND_INFO_ARRAY_SCHEMA
         )
         return structure_list(data, types.FriendInfo)
 
-    def get_friend_ofs(self) -> Sequence[types.FriendOfInfo]:
+    def get_friend_ofs(self) -> List[types.FriendOfInfo]:
         location = "/people/friend-ofs"
         data = self.call("get_friend_ofs", location, method="GET", schema=schemas.FRIEND_OF_INFO_ARRAY_SCHEMA)
         return structure_list(data, types.FriendOfInfo)
@@ -559,7 +559,7 @@ class MoeraNode(Caller):
         )
         return types.PrivateMediaFileInfo(data)
 
-    def get_private_media_parent_entry(self, id: str) -> Sequence[types.EntryInfo]:
+    def get_private_media_parent_entry(self, id: str) -> List[types.EntryInfo]:
         location = "/media/private/{id}/parent".format(id=quote_plus(id))
         data = self.call(
             "get_private_media_parent_entry", location, method="GET", schema=schemas.ENTRY_INFO_ARRAY_SCHEMA,
@@ -628,7 +628,7 @@ class MoeraNode(Caller):
         data = self.call("register_plugin", location, method="POST", body=plugin, schema=schemas.PLUGIN_INFO_SCHEMA)
         return types.PluginInfo(data)
 
-    def get_plugins(self) -> Sequence[types.PluginInfo]:
+    def get_plugins(self) -> List[types.PluginInfo]:
         location = "/plugins"
         data = self.call("get_plugins", location, method="GET", schema=schemas.PLUGIN_INFO_ARRAY_SCHEMA)
         return structure_list(data, types.PluginInfo)
@@ -671,7 +671,7 @@ class MoeraNode(Caller):
         data = self.call("delete_posting", location, method="DELETE", schema=schemas.RESULT_SCHEMA)
         return types.Result(data)
 
-    def get_postings_attached_to_posting(self, id: str) -> Sequence[types.PostingInfo]:
+    def get_postings_attached_to_posting(self, id: str) -> List[types.PostingInfo]:
         location = "/postings/{id}/attached".format(id=quote_plus(id))
         data = self.call(
             "get_postings_attached_to_posting", location, method="GET", schema=schemas.POSTING_INFO_ARRAY_SCHEMA,
@@ -679,7 +679,7 @@ class MoeraNode(Caller):
         )
         return structure_list(data, types.PostingInfo)
 
-    def get_posting_revisions(self, posting_id: str, limit: int | None = None) -> Sequence[types.PostingRevisionInfo]:
+    def get_posting_revisions(self, posting_id: str, limit: int | None = None) -> List[types.PostingRevisionInfo]:
         location = "/postings/{postingId}/revisions".format(postingId=quote_plus(posting_id))
         params = {"limit": limit}
         data = self.call(
@@ -756,7 +756,7 @@ class MoeraNode(Caller):
         )
         return types.ReactionTotalsInfo(data)
 
-    def search_posting_reactions(self, filter: types.ReactionsFilter) -> Sequence[types.ReactionInfo]:
+    def search_posting_reactions(self, filter: types.ReactionsFilter) -> List[types.ReactionInfo]:
         location = "/postings/reactions/search"
         data = self.call(
             "search_posting_reactions", location, method="POST", body=filter, schema=schemas.REACTION_INFO_ARRAY_SCHEMA
@@ -770,9 +770,7 @@ class MoeraNode(Caller):
         )
         return types.ReactionTotalsInfo(data)
 
-    def search_posting_reaction_totals(
-        self, filter: types.ReactionTotalsFilter
-    ) -> Sequence[types.ReactionTotalsInfo]:
+    def search_posting_reaction_totals(self, filter: types.ReactionTotalsFilter) -> List[types.ReactionTotalsInfo]:
         location = "/postings/reaction-totals/search"
         data = self.call(
             "search_posting_reaction_totals", location, method="POST", body=filter,
@@ -959,12 +957,12 @@ class MoeraNode(Caller):
         )
         return types.SheriffOrderInfo(data)
 
-    def update_settings(self, settings: Sequence[types.SettingInfo]) -> types.Result:
+    def update_settings(self, settings: List[types.SettingInfo]) -> types.Result:
         location = "/settings"
         data = self.call("update_settings", location, method="PUT", body=settings, schema=schemas.RESULT_SCHEMA)
         return types.Result(data)
 
-    def get_client_settings(self, prefix: str | None = None) -> Sequence[types.SettingInfo]:
+    def get_client_settings(self, prefix: str | None = None) -> List[types.SettingInfo]:
         location = "/settings/client".format()
         params = {"prefix": prefix}
         data = self.call(
@@ -972,7 +970,7 @@ class MoeraNode(Caller):
         )
         return structure_list(data, types.SettingInfo)
 
-    def get_node_settings(self, prefix: str | None = None) -> Sequence[types.SettingInfo]:
+    def get_node_settings(self, prefix: str | None = None) -> List[types.SettingInfo]:
         location = "/settings/node".format()
         params = {"prefix": prefix}
         data = self.call(
@@ -980,7 +978,7 @@ class MoeraNode(Caller):
         )
         return structure_list(data, types.SettingInfo)
 
-    def get_node_settings_metadata(self, prefix: str | None = None) -> Sequence[types.SettingMetaInfo]:
+    def get_node_settings_metadata(self, prefix: str | None = None) -> List[types.SettingMetaInfo]:
         location = "/settings/node/metadata".format()
         params = {"prefix": prefix}
         data = self.call(
@@ -989,7 +987,7 @@ class MoeraNode(Caller):
         )
         return structure_list(data, types.SettingMetaInfo)
 
-    def update_node_settings_metadata(self, metadata: Sequence[types.SettingMetaAttributes]) -> types.Result:
+    def update_node_settings_metadata(self, metadata: List[types.SettingMetaAttributes]) -> types.Result:
         location = "/settings/node/metadata"
         data = self.call(
             "update_node_settings_metadata", location, method="PUT", body=metadata, schema=schemas.RESULT_SCHEMA
@@ -1016,7 +1014,7 @@ class MoeraNode(Caller):
         )
         return types.SheriffComplainGroupInfo(data)
 
-    def get_sheriff_complaints_by_group(self, id: str) -> Sequence[types.SheriffComplainInfo]:
+    def get_sheriff_complaints_by_group(self, id: str) -> List[types.SheriffComplainInfo]:
         location = "/sheriff/complains/groups/{id}/complains".format(id=quote_plus(id))
         data = self.call(
             "get_sheriff_complaints_by_group", location, method="GET", auth=False,
@@ -1065,7 +1063,7 @@ class MoeraNode(Caller):
     def get_subscribers(
         self, node_name: str | None = None, type: types.SubscriptionType | None = None, feed_name: str | None = None,
         entry_id: str | None = None
-    ) -> Sequence[types.SubscriberInfo]:
+    ) -> List[types.SubscriberInfo]:
         location = "/people/subscribers".format()
         params = {"nodeName": node_name, "type": type, "feedName": feed_name, "entryId": entry_id}
         data = self.call(
@@ -1099,7 +1097,7 @@ class MoeraNode(Caller):
 
     def get_subscriptions(
         self, node_name: str | None = None, type: types.SubscriptionType | None = None
-    ) -> Sequence[types.SubscriptionInfo]:
+    ) -> List[types.SubscriptionInfo]:
         location = "/people/subscriptions".format()
         params = {"nodeName": node_name, "type": type}
         data = self.call(
@@ -1126,14 +1124,14 @@ class MoeraNode(Caller):
         data = self.call("delete_subscription", location, method="DELETE", schema=schemas.CONTACT_INFO_SCHEMA)
         return types.ContactInfo(data)
 
-    def search_subscriptions(self, filter: types.SubscriptionFilter) -> Sequence[types.SubscriptionInfo]:
+    def search_subscriptions(self, filter: types.SubscriptionFilter) -> List[types.SubscriptionInfo]:
         location = "/people/subscriptions/search"
         data = self.call(
             "search_subscriptions", location, method="GET", body=filter, schema=schemas.SUBSCRIPTION_INFO_ARRAY_SCHEMA
         )
         return structure_list(data, types.SubscriptionInfo)
 
-    def get_tokens(self) -> Sequence[types.TokenInfo]:
+    def get_tokens(self) -> List[types.TokenInfo]:
         location = "/tokens"
         data = self.call("get_tokens", location, method="GET", schema=schemas.TOKEN_INFO_ARRAY_SCHEMA)
         return structure_list(data, types.TokenInfo)

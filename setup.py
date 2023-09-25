@@ -8,5 +8,7 @@ setup(
         'camel-converter',
         'python-dateutil',
         'jsonschema>=4.19.0',
+        'PyYAML',
+        'first',
     ],
 )

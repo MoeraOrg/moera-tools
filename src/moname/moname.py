@@ -7,8 +7,8 @@ from typing import cast, NoReturn
 from dateutil.parser import parse as parse_date
 
 from moeralib import naming
-from moeralib.naming import RegisteredNameInfo, MAIN_SERVER, DEV_SERVER, MoeraNamingConnectionError, MoeraNamingError, \
-    Timestamp, SigningKeyInfo, node_name_parse
+from moeralib.naming import MAIN_SERVER, DEV_SERVER, MoeraNamingConnectionError, MoeraNamingError, node_name_parse
+from moeralib.naming.types import RegisteredNameInfo, Timestamp, SigningKeyInfo
 
 PROGRAM_NAME = 'moname'
 PAGE_SIZE = 100

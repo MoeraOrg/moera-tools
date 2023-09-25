@@ -4,14 +4,16 @@ import sys
 from configparser import ConfigParser
 from importlib.metadata import version
 from time import strftime, localtime
-from typing import Callable, cast, NoReturn
+from typing import Callable, cast, NoReturn, Sequence, List
 from urllib.parse import urlparse
+
+from first import first
 
 from moeralib import naming
 from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeConnectionError, moera_root
 from moeralib.node.types import (
     Timestamp, DomainAttributes, DomainInfo, Credentials, ProfileAttributes, NameToRegister, RegisteredNameSecret,
-    TokenAttributes, TokenName, SettingMetaInfo, SettingInfo
+    TokenAttributes, TokenName, SettingMetaInfo, SettingInfo, SettingMetaAttributes
 )
 
 PROGRAM_NAME = 'moctl'
@@ -30,12 +32,14 @@ class GlobalArgs:
     email: str
     node_name: str
     id: str
-    name: str | None
+    token_name: str | None
+    name: str
     description: bool
     defaults: bool
     modified: bool
     type: bool
     prefix: str | None
+    value: str
 
 
 config: ConfigParser
@@ -48,6 +52,8 @@ def error(s: str) -> NoReturn:
 
 
 def resolve_host_name(naming_server: str) -> None:
+    if args.host_name is None:
+        error('Node name is not set')
     try:
         args.host_url = naming.resolve(args.host_name, naming_server)
         if args.host_url is None:
@@ -227,13 +233,15 @@ def parse_args() -> None:
         'create', description='Create a new token.', help='create a new token')
     parser_token_create.set_defaults(routine=token_create)
     parser_token_create.add_argument('password', metavar='PASSWORD', help='password to set')
-    parser_token_create.add_argument('-n', '--token-name', dest='name', default=None, help='token name')
+    parser_token_create.add_argument('-n', '--token-name', dest='token_name', metavar='NAME', default=None,
+                                     help='token name')
 
     parser_token_rename = subparsers_token.add_parser(
         'rename', description='Rename a token.', help='rename a token')
     parser_token_rename.set_defaults(routine=token_rename)
     parser_token_rename.add_argument('id', metavar='ID', help='token ID')
-    parser_token_rename.add_argument('-n', '--token-name', dest='name', default=None, help='token name')
+    parser_token_rename.add_argument('-n', '--token-name', dest='token_name', metavar='NAME', default=None,
+                                     help='token name')
 
     parser_token_delete = subparsers_token.add_parser(
         'delete', description='Delete a token.', help='delete a token')
@@ -258,6 +266,45 @@ def parse_args() -> None:
     parser_option_show.add_argument('--prefix', dest='prefix', default=None, help='filter by name prefix')
     parser_option_show.add_argument('-t', '--type', dest='type', action='store_true', help='show type information')
 
+    parser_option_set = subparsers_option.add_parser(
+        'set', description='Set an option.', help='set an option')
+    parser_option_set.set_defaults(routine=option_set)
+    parser_option_set.add_argument('name', metavar='NAME', help='option name')
+    parser_option_set.add_argument('value', metavar='VALUE', help='option value')
+
+    parser_option_reset = subparsers_option.add_parser(
+        'reset', description='Reset an option to its default value.', help='reset an option to its default value')
+    parser_option_reset.set_defaults(routine=option_reset)
+    parser_option_reset.add_argument('name', metavar='NAME', help='option name')
+
+    parser_option_set_default = subparsers_option.add_parser(
+        'set-default', description='Set default value of an option.', help='set default value of an option')
+    parser_option_set_default.set_defaults(routine=option_set_default)
+    parser_option_set_default.add_argument('name', metavar='NAME', help='option name')
+    parser_option_set_default.add_argument('value', metavar='VALUE', help='option value')
+
+    parser_option_reset_default = subparsers_option.add_parser(
+        'reset-default', description='Reset default value of an option to its built-in value.',
+        help='reset default value of an option to its built-in value')
+    parser_option_reset_default.set_defaults(routine=option_reset_default)
+    parser_option_reset_default.add_argument('name', metavar='NAME', help='option name')
+
+    parser_option_set_privileged = subparsers_option.add_parser(
+        'set-privileged', description='Make an option privileged.', help='make an option privileged')
+    parser_option_set_privileged.set_defaults(routine=option_set_privileged)
+    parser_option_set_privileged.add_argument('name', metavar='NAME', help='option name')
+
+    parser_option_set_not_privileged = subparsers_option.add_parser(
+        'set-not-privileged', description='Make an option not privileged.', help='make an option not privileged')
+    parser_option_set_not_privileged.set_defaults(routine=option_set_not_privileged)
+    parser_option_set_not_privileged.add_argument('name', metavar='NAME', help='option name')
+
+    parser_option_reset_privileged = subparsers_option.add_parser(
+        'reset-privileged', description='Reset privileged status of an option to its built-in value.',
+        help='reset privileged status of an option to its built-in value')
+    parser_option_reset_privileged.set_defaults(routine=option_reset_privileged)
+    parser_option_reset_privileged.add_argument('name', metavar='NAME', help='option name')
+
     args = cast(GlobalArgs, parser.parse_args())
 
     configure_provider()
@@ -275,6 +322,7 @@ def routine_help(parser: argparse.ArgumentParser) -> None:
 
 def run() -> None:
     node = MoeraNode()
+    assert args.host_url is not None
     node.node_url(args.host_url)
     args.routine(node)
 
@@ -314,7 +362,7 @@ def print_domain(domain: DomainInfo) -> None:
 
 def domain_show(node: MoeraNode) -> None:
     setup_root_admin_auth(node, optional=True)
-    domain_name = urlparse(node.root).netloc.split(':')[0]
+    domain_name = cast(str, urlparse(node.root).netloc).split(':')[0]
     print_domain(node.get_domain(domain_name))
 
 
@@ -461,7 +509,7 @@ def token_create(node: MoeraNode) -> None:
     attrs = TokenAttributes()
     attrs.login = 'admin'
     attrs.password = args.password
-    attrs.name = args.name
+    attrs.name = args.token_name
     info = node.create_token(attrs)
     print(f'ID:\t{info.id}')
     print(f'token:\t{info.token}')
@@ -472,7 +520,7 @@ def token_create(node: MoeraNode) -> None:
 def token_rename(node: MoeraNode) -> None:
     setup_admin_auth(node)
     tname = TokenName()
-    tname.name = args.name
+    tname.name = args.token_name
     info = node.update_token(args.id, tname)
     print(f'ID:\t{info.id}')
     print(f'token:\t{info.token}')
@@ -485,19 +533,24 @@ def token_delete(node: MoeraNode) -> None:
     node.delete_token(args.id)
 
 
+def get_default_options(metadata: Sequence[SettingMetaInfo]) -> List[SettingInfo]:
+    options = []
+    for meta in metadata:
+        if args.prefix is not None and not meta.name.startswith(args.prefix):
+            continue
+        option = SettingInfo()
+        option.name = meta.name
+        option.value = meta.default_value
+        options.append(option)
+    return options
+
+
 def option_show(node: MoeraNode) -> None:
     setup_admin_auth(node)
     metadata = node.get_node_settings_metadata()
     meta_map: dict[str, SettingMetaInfo] = {m.name: m for m in metadata}
     if args.defaults:
-        options = []
-        for meta in metadata:
-            if args.prefix is not None and not meta.name.startswith(args.prefix):
-                continue
-            option = SettingInfo()
-            option.name = meta.name
-            option.value = meta.default_value
-            options.append(option)
+        options = get_default_options(metadata)
     else:
         options = node.get_node_settings(args.prefix)
     for option in options:
@@ -511,7 +564,10 @@ def option_show(node: MoeraNode) -> None:
                 changed = '*'
             elif args.modified:
                 continue
-        value = option.value.replace('\n', '\\n')
+        if option.value is not None:
+            value = option.value.replace('\n', '\\n')
+        else:
+            value = 'null'
         line = f'{privileged}{changed} {option.name} = {value}'
         if meta is not None:
             if args.type:
@@ -522,25 +578,96 @@ def option_show(node: MoeraNode) -> None:
 
 
 def format_type_info(meta: SettingMetaInfo) -> str:
-    type_info = meta.type
-    if meta.modifiers.format is not None:
-        type_info += f':{meta.modifiers.format}'
-    if meta.modifiers.min is not None:
-        type_info += f', min={meta.modifiers.min}'
-    if meta.modifiers.max is not None:
-        type_info += f', max={meta.modifiers.max}'
-    if meta.modifiers.multiline is True:
-        type_info += ', multiline'
-    if meta.modifiers.never is True:
-        type_info += ', never'
-    if meta.modifiers.always is True:
-        type_info += ', always'
-    if meta.modifiers.principals is not None:
-        type_info += f', [{", ".join(meta.modifiers.principals)}]'
+    type_info: str = meta.type
+    if meta.modifiers is not None:
+        if meta.modifiers.format is not None:
+            type_info += f':{meta.modifiers.format}'
+        if meta.modifiers.min is not None:
+            type_info += f', min={meta.modifiers.min}'
+        if meta.modifiers.max is not None:
+            type_info += f', max={meta.modifiers.max}'
+        if meta.modifiers.multiline is True:
+            type_info += ', multiline'
+        if meta.modifiers.never is True:
+            type_info += ', never'
+        if meta.modifiers.always is True:
+            type_info += ', always'
+        if meta.modifiers.principals is not None:
+            type_info += f', [{", ".join(meta.modifiers.principals)}]'
     return type_info
 
 
-# TODO manage settings
+def option_set(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    info = SettingInfo()
+    info.name = args.name
+    info.value = args.value
+    node.update_settings([info])
+
+
+def option_reset(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    info = SettingInfo()
+    info.name = args.name
+    info.value = None
+    node.update_settings([info])
+
+
+def get_option_metadata(node):
+    meta = first([m for m in node.get_node_settings_metadata(prefix=args.name) if m.name == args.name])
+    if meta is None:
+        error("Option not found: " + args.name)
+    return meta
+
+
+def option_set_default(node: MoeraNode) -> None:
+    setup_root_admin_auth(node)
+    meta = get_option_metadata(node)
+    attrs = SettingMetaAttributes()
+    attrs.name = args.name
+    attrs.default_value = args.value
+    attrs.privileged = meta.privileged
+    node.update_node_settings_metadata([attrs])
+
+
+def option_reset_default(node: MoeraNode) -> None:
+    setup_root_admin_auth(node)
+    meta = get_option_metadata(node)
+    attrs = SettingMetaAttributes()
+    attrs.name = args.name
+    attrs.default_value = None
+    attrs.privileged = meta.privileged
+    node.update_node_settings_metadata([attrs])
+
+
+def option_set_privileged(node: MoeraNode) -> None:
+    setup_root_admin_auth(node)
+    meta = get_option_metadata(node)
+    attrs = SettingMetaAttributes()
+    attrs.name = args.name
+    attrs.default_value = meta.default_value
+    attrs.privileged = True
+    node.update_node_settings_metadata([attrs])
+
+
+def option_set_not_privileged(node: MoeraNode) -> None:
+    setup_root_admin_auth(node)
+    meta = get_option_metadata(node)
+    attrs = SettingMetaAttributes()
+    attrs.name = args.name
+    attrs.default_value = meta.default_value
+    attrs.privileged = False
+    node.update_node_settings_metadata([attrs])
+
+
+def option_reset_privileged(node: MoeraNode) -> None:
+    setup_root_admin_auth(node)
+    meta = get_option_metadata(node)
+    attrs = SettingMetaAttributes()
+    attrs.name = args.name
+    attrs.default_value = meta.default_value
+    attrs.privileged = None
+    node.update_node_settings_metadata([attrs])
 
 
 def moctl() -> None:

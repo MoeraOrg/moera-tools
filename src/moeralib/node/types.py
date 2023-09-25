@@ -1,6 +1,6 @@
 # This file is generated
 
-from typing import Literal, Mapping, Sequence, TypeAlias
+from typing import List, Literal, Mapping, Sequence, TypeAlias
 
 from ..structure import Structure
 
@@ -219,7 +219,7 @@ class AvatarOrdinal(Structure):
 
 
 class AvatarsOrdered(Structure):
-    ids: Sequence[str]
+    ids: List[str]
 
 
 class BlockedInstantAttributes(Structure):
@@ -269,7 +269,7 @@ class BlockedUserAttributes(Structure):
 
 
 class BlockedUserFilter(Structure):
-    blocked_operations: Sequence[BlockedOperation] | None = None
+    blocked_operations: List[BlockedOperation] | None = None
     node_name: str | None = None
     entry_id: str | None = None
     entry_node_name: str | None = None
@@ -285,12 +285,12 @@ class CarteInfo(Structure):
     carte: str
     beginning: Timestamp
     deadline: Timestamp
-    permissions: Sequence[str] | None = None
+    permissions: List[str] | None = None
 
 
 class CarteSet(Structure):
     cartes_ip: str | None = None
-    cartes: Sequence[CarteInfo]
+    cartes: List[CarteInfo]
     created_at: Timestamp
 
 
@@ -417,20 +417,20 @@ class FriendGroupInfo(Structure):
 
 
 class FriendGroupsFeatures(Structure):
-    available: Sequence[FriendGroupInfo]
-    member_of: Sequence[FriendGroupDetails] | None = None
+    available: List[FriendGroupInfo]
+    member_of: List[FriendGroupDetails] | None = None
 
 
 class FriendInfo(Structure):
     node_name: str
     contact: ContactInfo | None = None
-    groups: Sequence[FriendGroupDetails] | None = None
+    groups: List[FriendGroupDetails] | None = None
 
 
 class FriendOfInfo(Structure):
     remote_node_name: str
     contact: ContactInfo | None = None
-    groups: Sequence[FriendGroupDetails] | None = None
+    groups: List[FriendGroupDetails] | None = None
 
 
 class FundraiserInfo(Structure):
@@ -507,7 +507,7 @@ class PeopleGeneralInfo(Structure):
 class PluginContext(Structure):
     root_admin: bool
     admin: bool
-    auth_categories: Sequence[str]
+    auth_categories: List[str]
     client_name: str
     remote_address: str
     user_agent: str
@@ -521,11 +521,11 @@ class PluginContext(Structure):
 class PostingFeatures(Structure):
     post: bool | None = None
     subject_present: bool
-    source_formats: Sequence[SourceFormat]
+    source_formats: List[SourceFormat]
     media_max_size: int
     image_recommended_size: int
     image_recommended_pixels: int
-    image_formats: Sequence[str]
+    image_formats: List[str]
 
 
 class PostingSourceInfo(Structure):
@@ -547,7 +547,7 @@ class PrivateMediaFileInfo(Structure):
     orientation: int | None = None
     size: int
     posting_id: str | None = None
-    previews: Sequence[MediaFilePreviewInfo] | None = None
+    previews: List[MediaFilePreviewInfo] | None = None
     operations: PrivateMediaFileOperations | None = None
 
 
@@ -559,7 +559,7 @@ class ProfileAttributes(Structure):
     bio_src: str | None = None
     bio_src_format: SourceFormat | None = None
     avatar_id: str | None = None
-    fundraisers: Sequence[FundraiserInfo] | None = None
+    fundraisers: List[FundraiserInfo] | None = None
     operations: ProfileOperations | None = None
 
 
@@ -572,7 +572,7 @@ class ProfileInfo(Structure):
     bio_src_format: SourceFormat | None = None
     bio_html: str | None = None
     avatar: AvatarInfo | None = None
-    fundraisers: Sequence[FundraiserInfo] | None = None
+    fundraisers: List[FundraiserInfo] | None = None
     operations: ProfileOperations | None = None
 
 
@@ -605,7 +605,7 @@ class ReactionDescription(Structure):
 
 class ReactionsFilter(Structure):
     owner_name: str | None = None
-    postings: Sequence[str] | None = None
+    postings: List[str] | None = None
 
 
 class ReactionInfo(Structure):
@@ -634,7 +634,7 @@ class ReactionsSliceInfo(Structure):
     before: int
     after: int
     total: int
-    reactions: Sequence[ReactionInfo]
+    reactions: List[ReactionInfo]
 
 
 class ReactionTotalInfo(Structure):
@@ -644,13 +644,13 @@ class ReactionTotalInfo(Structure):
 
 
 class ReactionTotalsFilter(Structure):
-    postings: Sequence[str]
+    postings: List[str]
 
 
 class ReactionTotalsInfo(Structure):
     entry_id: str
-    positive: Sequence[ReactionTotalInfo] | None = None
-    negative: Sequence[ReactionTotalInfo] | None = None
+    positive: List[ReactionTotalInfo] | None = None
+    negative: List[ReactionTotalInfo] | None = None
 
 
 class ReactionOverride(Structure):
@@ -661,7 +661,7 @@ class ReactionOverride(Structure):
 
 class RegisteredNameSecret(Structure):
     name: str
-    mnemonic: Sequence[str] | None = None
+    mnemonic: List[str] | None = None
     secret: str | None = None
 
 
@@ -750,7 +750,7 @@ class SettingTypeModifiers(Structure):
     multiline: bool | None = None
     never: bool | None = None
     always: bool | None = None
-    principals: Sequence[PrincipalFlag] | None = None
+    principals: List[PrincipalFlag] | None = None
 
 
 class SheriffComplainDecisionText(Structure):
@@ -789,7 +789,7 @@ class SheriffComplainGroupInfo(Structure):
 class SheriffComplainGroupsSliceInfo(Structure):
     before: int
     after: int
-    groups: Sequence[SheriffComplainGroupInfo]
+    groups: List[SheriffComplainGroupInfo]
     total: int
     total_in_past: int
     total_in_future: int
@@ -892,7 +892,7 @@ class StoryAttributes(Structure):
 
 
 class StorySummaryBlocked(Structure):
-    operations: Sequence[BlockedOperation]
+    operations: List[BlockedOperation]
     period: int | None = None
 
 
@@ -906,8 +906,8 @@ class StorySummaryEntry(Structure):
     owner_full_name: str | None = None
     owner_gender: str | None = None
     heading: str | None = None
-    sheriffs: Sequence[str] | None = None
-    sheriff_marks: Sequence[SheriffMark] | None = None
+    sheriffs: List[str] | None = None
+    sheriff_marks: List[SheriffMark] | None = None
 
 
 class StorySummaryNode(Structure):
@@ -967,8 +967,8 @@ class SubscriptionDescription(Structure):
 
 class SubscriptionFilter(Structure):
     type: SubscriptionType | None = None
-    feeds: Sequence[RemoteFeed] | None = None
-    postings: Sequence[RemotePosting] | None = None
+    feeds: List[RemoteFeed] | None = None
+    postings: List[RemotePosting] | None = None
 
 
 class SubscriptionInfo(Structure):
@@ -999,7 +999,7 @@ class TokenInfo(Structure):
     id: str
     token: str
     name: str | None = None
-    permissions: Sequence[str] | None = None
+    permissions: List[str] | None = None
     plugin_name: str | None = None
     created_at: Timestamp
     deadline: Timestamp | None = None
@@ -1036,7 +1036,7 @@ class UserListSliceInfo(Structure):
     list_name: str
     before: int
     after: int
-    items: Sequence[UserListItemInfo]
+    items: List[UserListItemInfo]
     total: int
     total_in_past: int
     total_in_future: int
@@ -1052,7 +1052,7 @@ class WhoAmI(Structure):
 
 
 class ActivityReactionFilter(Structure):
-    postings: Sequence[RemotePosting] | None = None
+    postings: List[RemotePosting] | None = None
 
 
 class ActivityReactionInfo(Structure):
@@ -1066,8 +1066,8 @@ class ActivityReactionInfo(Structure):
 
 
 class BlockedByUserFilter(Structure):
-    blocked_operations: Sequence[BlockedOperation] | None = None
-    postings: Sequence[RemotePostingOrNode] | None = None
+    blocked_operations: List[BlockedOperation] | None = None
+    postings: List[RemotePostingOrNode] | None = None
     strict: bool | None = None
 
 
@@ -1100,7 +1100,7 @@ class BlockedUserInfo(Structure):
 class Body(Structure):
     subject: str | None = None
     text: str | None = None
-    link_previews: Sequence[LinkPreview] | None = None
+    link_previews: List[LinkPreview] | None = None
 
 
 class CommentRevisionInfo(Structure):
@@ -1126,7 +1126,7 @@ class CommentSourceText(Structure):
     owner_avatar: AvatarDescription | None = None
     body_src: Body | None = None
     body_src_format: SourceFormat | None = None
-    media: Sequence[MediaWithDigest] | None = None
+    media: List[MediaWithDigest] | None = None
     accepted_reactions: AcceptedReactions | None = None
     replied_to_id: str | None = None
     operations: CommentOperations | None = None
@@ -1143,7 +1143,7 @@ class CommentText(Structure):
     body_src_format: SourceFormat | None = None
     body: Body | None = None
     body_format: BodyFormat | None = None
-    media: Sequence[str] | None = None
+    media: List[str] | None = None
     created_at: Timestamp | None = None
     accepted_reactions: AcceptedReactions | None = None
     replied_to_id: str | None = None
@@ -1165,7 +1165,7 @@ class DraftText(Structure):
     accepted_reactions: AcceptedReactions | None = None
     body_src: Body | None = None
     body_src_format: SourceFormat | None = None
-    media: Sequence[RemoteMedia] | None = None
+    media: List[RemoteMedia] | None = None
     publish_at: int | None = None
     update_info: UpdateInfo | None = None
     operations: PostingOperations | None = None
@@ -1174,10 +1174,10 @@ class DraftText(Structure):
 
 class Features(Structure):
     posting: PostingFeatures
-    plugins: Sequence[str] | None = None
+    plugins: List[str] | None = None
     feed_width: int
     friend_groups: FriendGroupsFeatures | None = None
-    ask: Sequence[AskSubject] | None = None
+    ask: List[AskSubject] | None = None
     subscribed: bool | None = None
 
 
@@ -1188,13 +1188,13 @@ class FeedInfo(Structure):
     first_created_at: Timestamp | None = None
     last_created_at: Timestamp | None = None
     operations: FeedOperations | None = None
-    sheriffs: Sequence[str] | None = None
-    sheriff_marks: Sequence[SheriffMark] | None = None
+    sheriffs: List[str] | None = None
+    sheriff_marks: List[SheriffMark] | None = None
 
 
 class FriendDescription(Structure):
     node_name: str
-    groups: Sequence[FriendGroupAssignment] | None = None
+    groups: List[FriendGroupAssignment] | None = None
 
 
 class MediaAttachment(Structure):
@@ -1224,7 +1224,7 @@ class PostingInfo(Structure):
     body_src_format: SourceFormat | None = None
     body: Body
     body_format: BodyFormat | None = None
-    media: Sequence[MediaAttachment] | None = None
+    media: List[MediaAttachment] | None = None
     heading: str
     update_info: UpdateInfo | None = None
     created_at: Timestamp
@@ -1239,21 +1239,21 @@ class PostingInfo(Structure):
     digest: bytes
     signature: bytes | None = None
     signature_version: int | None = None
-    feed_references: Sequence[FeedReference] | None = None
-    blocked_instants: Sequence[BlockedPostingInstantInfo] | None = None
+    feed_references: List[FeedReference] | None = None
+    blocked_instants: List[BlockedPostingInstantInfo] | None = None
     operations: PostingOperations | None = None
     receiver_operations: PostingOperations | None = None
     comment_operations: CommentOperations | None = None
     reaction_operations: ReactionOperations | None = None
     comment_reaction_operations: ReactionOperations | None = None
-    blocked_operations: Sequence[BlockedEntryOperation] | None = None
-    blocked_comment_operations: Sequence[BlockedEntryOperation] | None = None
-    sheriffs: Sequence[str] | None = None
-    sheriff_marks: Sequence[SheriffMark] | None = None
+    blocked_operations: List[BlockedEntryOperation] | None = None
+    blocked_comment_operations: List[BlockedEntryOperation] | None = None
+    sheriffs: List[str] | None = None
+    sheriff_marks: List[SheriffMark] | None = None
     accepted_reactions: AcceptedReactions | None = None
     client_reaction: ClientReactionInfo | None = None
     reactions: ReactionTotalsInfo | None = None
-    sources: Sequence[PostingSourceInfo] | None = None
+    sources: List[PostingSourceInfo] | None = None
     total_comments: int | None = None
 
 
@@ -1265,7 +1265,7 @@ class PostingRevisionInfo(Structure):
     body_src_format: SourceFormat | None = None
     body: Body
     body_format: BodyFormat | None = None
-    media: Sequence[MediaAttachment] | None = None
+    media: List[MediaAttachment] | None = None
     heading: str
     update_info: UpdateInfo | None = None
     created_at: Timestamp
@@ -1283,7 +1283,7 @@ class PostingSourceText(Structure):
     owner_avatar: AvatarDescription | None = None
     body_src: Body | None = None
     body_src_format: SourceFormat | None = None
-    media: Sequence[MediaWithDigest] | None = None
+    media: List[MediaWithDigest] | None = None
     accepted_reactions: AcceptedReactions | None = None
     operations: PostingOperations | None = None
     comment_operations: CommentOperations | None = None
@@ -1299,10 +1299,10 @@ class PostingText(Structure):
     body_src_format: SourceFormat | None = None
     body: Body | None = None
     body_format: BodyFormat | None = None
-    media: Sequence[str] | None = None
+    media: List[str] | None = None
     created_at: Timestamp | None = None
     accepted_reactions: AcceptedReactions | None = None
-    publications: Sequence[StoryAttributes] | None = None
+    publications: List[StoryAttributes] | None = None
     update_info: UpdateInfo | None = None
     signature: bytes | None = None
     signature_version: int | None = None
@@ -1340,12 +1340,12 @@ class StorySummaryData(Structure):
     node: StorySummaryNode | None = None
     posting: StorySummaryEntry | None = None
     comment: StorySummaryEntry | None = None
-    comments: Sequence[StorySummaryEntry] | None = None
+    comments: List[StorySummaryEntry] | None = None
     total_comments: int | None = None
     replied_to: StorySummaryEntry | None = None
     parent_posting: StorySummaryEntry | None = None
     reaction: StorySummaryReaction | None = None
-    reactions: Sequence[StorySummaryReaction] | None = None
+    reactions: List[StorySummaryReaction] | None = None
     total_reactions: int | None = None
     feed_name: str | None = None
     subscription_reason: SubscriptionReason | None = None
@@ -1371,7 +1371,7 @@ class CommentInfo(Structure):
     body_src_format: SourceFormat | None = None
     body: Body
     body_format: BodyFormat | None = None
-    media: Sequence[MediaAttachment] | None = None
+    media: List[MediaAttachment] | None = None
     heading: str
     replied_to: RepliedTo | None = None
     moment: int
@@ -1387,8 +1387,8 @@ class CommentInfo(Structure):
     reaction_operations: ReactionOperations | None = None
     owner_operations: CommentOperations | None = None
     senior_operations: CommentOperations | None = None
-    blocked_operations: Sequence[BlockedEntryOperation] | None = None
-    sheriff_marks: Sequence[SheriffMark] | None = None
+    blocked_operations: List[BlockedEntryOperation] | None = None
+    sheriff_marks: List[SheriffMark] | None = None
     accepted_reactions: AcceptedReactions | None = None
     client_reaction: ClientReactionInfo | None = None
     senior_reaction: ClientReactionInfo | None = None
@@ -1398,7 +1398,7 @@ class CommentInfo(Structure):
 class CommentsSliceInfo(Structure):
     before: int
     after: int
-    comments: Sequence[CommentInfo]
+    comments: List[CommentInfo]
     total: int
     total_in_past: int
     total_in_future: int
@@ -1421,7 +1421,7 @@ class DraftInfo(Structure):
     body_src_format: SourceFormat | None = None
     body: Body
     body_format: BodyFormat | None = None
-    media: Sequence[MediaAttachment] | None = None
+    media: List[MediaAttachment] | None = None
     heading: str
     publish_at: int | None = None
     update_info: UpdateInfo | None = None
@@ -1439,8 +1439,8 @@ class PluginDescription(Structure):
     title: str | None = None
     description: str | None = None
     location: str | None = None
-    accepted_events: Sequence[str] | None = None
-    options: Sequence[SettingDescriptor] | None = None
+    accepted_events: List[str] | None = None
+    options: List[SettingDescriptor] | None = None
 
 
 class PluginInfo(Structure):
@@ -1450,8 +1450,8 @@ class PluginInfo(Structure):
     title: str | None = None
     description: str | None = None
     location: str | None = None
-    accepted_events: Sequence[str] | None = None
-    settings: Sequence[SettingMetaInfo] | None = None
+    accepted_events: List[str] | None = None
+    settings: List[SettingMetaInfo] | None = None
     token_id: str | None = None
 
 
@@ -1492,7 +1492,7 @@ class CommentCreated(Structure):
 class FeedSliceInfo(Structure):
     before: int
     after: int
-    stories: Sequence[StoryInfo]
+    stories: List[StoryInfo]
     total_in_past: int
     total_in_future: int
 

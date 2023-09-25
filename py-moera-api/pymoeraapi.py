@@ -134,7 +134,7 @@ def generate_operations(operations: Any, tfile: TextIO, sfile: TextIO) -> None:
 
 PY_TYPES = {
     'String': 'str',
-    'String[]': 'Sequence[str]',
+    'String[]': 'List[str]',
     'int': 'int',
     'float': 'float',
     'boolean': 'bool',
@@ -198,7 +198,7 @@ class Structure:
                     continue
                 t = to_py_type(field['type'])
             if field.get('array', False):
-                t = f'Sequence[{t}]'
+                t = f'List[{t}]'
             tfile.write(tmpl % (to_snake(field['name']), t))
 
     def generate_schema(self, sfile: TextIO) -> None:
@@ -390,7 +390,7 @@ def generate_calls(api: Any, structs: Mapping[str, Structure], afile: TextIO) ->
                     name = to_snake(inp['name'])
                     py_type = 'types.' + inp['struct']
                     if inp.get('array', False):
-                        py_type = f'Sequence[{py_type}]'
+                        py_type = f'List[{py_type}]'
                     params += f', {name}: {py_type}'
                     call_params += f', body={name}'
             params += tail_params
@@ -454,7 +454,7 @@ def generate_calls(api: Any, structs: Mapping[str, Structure], afile: TextIO) ->
                 call_params += ', bodies=True'
 
             if result_array:
-                afile.write(params_wrap(f'\n{ind(1)}def {function}(%s) -> Sequence[{result}]:\n', params, 2))
+                afile.write(params_wrap(f'\n{ind(1)}def {function}(%s) -> List[{result}]:\n', params, 2))
             else:
                 afile.write(params_wrap(f'\n{ind(1)}def {function}(%s) -> {result}:\n', params, 2))
             afile.write(location)
@@ -473,7 +473,7 @@ def generate_calls(api: Any, structs: Mapping[str, Structure], afile: TextIO) ->
 
 PREAMBLE_TYPES = '''# This file is generated
 
-from typing import Literal, Mapping, Sequence, TypeAlias
+from typing import List, Literal, Mapping, Sequence, TypeAlias
 
 from ..structure import Structure
 
@@ -490,7 +490,7 @@ from ..structure import to_nullable_object_schema, array_schema
 
 PREAMBLE_CALLS = '''# This file is generated
 
-from typing import IO, Sequence, cast
+from typing import IO, List, Sequence, cast
 from urllib.parse import quote_plus
 
 from . import types, schemas

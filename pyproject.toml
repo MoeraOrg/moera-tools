@@ -22,7 +22,9 @@ dependencies = [
     "requests>=2.31.0",
     "camel-converter",
     "python-dateutil",
-    "jsonschema>=4.19.0"
+    "jsonschema>=4.19.0",
+    "PyYAML",
+    "first"
 ]
 
 [project.scripts]
