@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "moera-tools"
-version = "0.2.0"
+version = "0.3.0"
 authors = [
     {name = "Shmuel Leib Melamud", email = "balu@moera.org"},
 ]
@@ -17,12 +17,12 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Intended Audience :: System Administrators",
+    "Topic :: Utilities"
 ]
 dependencies = [
-    "requests>=2.31.0",
+    "moeralib==0.14.0",
     "camel-converter",
     "python-dateutil",
-    "jsonschema>=4.19.0",
     "PyYAML",
     "first"
 ]
