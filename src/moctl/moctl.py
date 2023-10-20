@@ -205,7 +205,7 @@ def parse_args() -> None:
     parser_name_register.add_argument('node_name', metavar='NAME', help='name to register')
 
     parser_name_assign = subparsers_name.add_parser(
-        'assign', aliases=['reg'], description='Assign an existing node name.', help='assign an existing node name')
+        'assign', description='Assign an existing node name.', help='assign an existing node name')
     parser_name_assign.set_defaults(routine=name_assign)
     parser_name_assign.add_argument('node_name', metavar='NAME', help='name to assign')
 
@@ -232,7 +232,7 @@ def parse_args() -> None:
     parser_token_create = subparsers_token.add_parser(
         'create', description='Create a new token.', help='create a new token')
     parser_token_create.set_defaults(routine=token_create)
-    parser_token_create.add_argument('password', metavar='PASSWORD', help='password to set')
+    parser_token_create.add_argument('password', metavar='PASSWORD', help='the current password for authentication')
     parser_token_create.add_argument('-n', '--token-name', dest='token_name', metavar='NAME', default=None,
                                      help='token name')
 
