@@ -321,9 +321,7 @@ def routine_help(parser: argparse.ArgumentParser) -> None:
 
 
 def run() -> None:
-    node = MoeraNode()
-    assert args.host_url is not None
-    node.node_url(args.host_url)
+    node = MoeraNode(args.host_url)
     args.routine(node)
 
 
