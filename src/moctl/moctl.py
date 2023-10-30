@@ -8,7 +8,6 @@ from typing import Callable, cast, NoReturn, Sequence, List
 from urllib.parse import urlparse
 
 from first import first
-
 from moeralib import naming
 from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeConnectionError, moera_root
 from moeralib.node.types import (
@@ -47,7 +46,7 @@ args: GlobalArgs
 
 
 def error(s: str) -> NoReturn:
-    print('%s: error: %s' % (PROGRAM_NAME, s), file=sys.stderr)
+    print(f'{PROGRAM_NAME}: error: {s}', file=sys.stderr)
     sys.exit(1)
 
 
@@ -116,7 +115,7 @@ def parse_args() -> None:
 
     parser = argparse.ArgumentParser(prog=PROGRAM_NAME, description='Moera server management.')
     parser.set_defaults(routine=lambda: routine_help(parser))
-    program_version = '%s (moera-tools) %s' % (PROGRAM_NAME, version('moera-tools'))
+    program_version = f'{PROGRAM_NAME} (moera-tools) {version("moera-tools")}'
     group = parser.add_mutually_exclusive_group()
     parser.add_argument('-d', '--dev', action='store_const', dest='naming_server', const=naming.DEV_SERVER,
                         help='use the development naming server')

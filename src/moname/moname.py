@@ -30,7 +30,7 @@ args: GlobalArgs
 
 
 def error(s: str) -> NoReturn:
-    print('%s: error: %s' % (PROGRAM_NAME, s), file=sys.stderr)
+    print(f'{PROGRAM_NAME}: error: {s}', file=sys.stderr)
     sys.exit(1)
 
 
@@ -58,7 +58,7 @@ def parse_args() -> None:
                         help='get information at the specific date/time')
     parser.add_argument('-w', '--newer', dest='newer', type=str_to_timestamp, default=None,
                         help='show the names registered after the specific date/time')
-    program_version = '%s (moera-tools) %s' % (PROGRAM_NAME, version('moera-tools'))
+    program_version = f'{PROGRAM_NAME} (moera-tools) {version("moera-tools")}'
     parser.add_argument('-V', '--version', action='version', version=program_version)
     args = cast(GlobalArgs, parser.parse_args())
 
