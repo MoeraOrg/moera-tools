@@ -80,7 +80,7 @@ def configure_provider() -> None:
             if args.naming_server is not None:
                 naming_server = args.naming_server
             else:
-                naming_server = naming_server_url(config.get('default', 'naming-server'))
+                naming_server = naming_server_url(config.get('default', 'naming-server', fallback=naming.MAIN_SERVER))
             resolve_host_name(naming_server)
         if args.host_url is not None:
             netloc = urlparse(moera_root(args.host_url)).netloc
@@ -99,7 +99,7 @@ def configure_provider() -> None:
         error("Provider is not found in the configuration file: " + args.provider)
 
     if args.naming_server is None:
-        args.naming_server = naming_server_url(config[args.provider].get('naming-server'))
+        args.naming_server = naming_server_url(config[args.provider].get('naming-server', fallback=naming.MAIN_SERVER))
     if args.host_name is None:
         args.host_name = config[args.provider].get('node-name')
     if args.host_url is None:
