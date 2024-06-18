@@ -23,7 +23,8 @@ dependencies = [
     "moeralib~=0.15.3",
     "python-dateutil",
     "PyYAML",
-    "first"
+    "first",
+    "docopt"
 ]
 
 [project.scripts]

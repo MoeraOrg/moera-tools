@@ -8,5 +8,6 @@ setup(
         'python-dateutil',
         'PyYAML',
         'first',
+        'docopt'
     ],
 )

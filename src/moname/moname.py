@@ -1,11 +1,10 @@
-import argparse
 import sys
 from importlib.metadata import version
 from time import time, strftime, localtime
-from typing import cast, NoReturn
+from typing import NoReturn, Literal
 
 from dateutil.parser import parse as parse_date
-
+from docopt import docopt
 from moeralib import naming
 from moeralib.naming import MAIN_SERVER, DEV_SERVER, MoeraNamingConnectionError, MoeraNamingError, node_name_parse
 from moeralib.naming.types import RegisteredNameInfo, Timestamp, SigningKeyInfo
@@ -13,11 +12,41 @@ from moeralib.naming.types import RegisteredNameInfo, Timestamp, SigningKeyInfo
 PROGRAM_NAME = 'moname'
 PAGE_SIZE = 100
 
+OPTIONS_HELP = """
+Query Moera naming service.
+
+usage:
+  moname [--dev | --server SERVER] [--created] [--keys | --all-keys] [--similar] [--at AT] <name>
+  moname --list [--dev | --server SERVER] [--created] [--at AT] [--newer NEWER] [<name>]
+  moname --add <name>
+  moname --help
+  moname --version
+
+positional arguments:
+  <name>                node name (use _N suffix to set generation)
+
+options:
+  -h, --help            show this help message and exit
+  -a, --add             register a new name
+  -c, --created         show creation time of the names
+  -d, --dev             use the development naming server
+  -k, --keys            show detailed information including keys
+  -K, --all-keys        show detailed information including all current and past keys
+  -l, --list            list the registered names
+  -s SERVER, --server SERVER
+                        naming server URL
+  -S, --similar         try to find a similar name, if the provided one is not found
+  -t AT, --at AT        get information at the specific date/time
+  -w NEWER, --newer NEWER
+                        show the names registered after the specific date/time
+  -V, --version         show program's version number and exit
+"""
+
 
 class GlobalArgs:
     name: str
     generation: int
-    list: bool
+    command: Literal["resolve", "list", "add"]
     server: str
     created: bool
     keys: bool | None
@@ -26,7 +55,7 @@ class GlobalArgs:
     newer: Timestamp | None
 
 
-args: GlobalArgs
+args: GlobalArgs = GlobalArgs()
 
 
 def error(s: str) -> NoReturn:
@@ -37,53 +66,42 @@ def error(s: str) -> NoReturn:
 def parse_args() -> None:
     global args
 
-    parser = argparse.ArgumentParser(prog=PROGRAM_NAME, description='Query Moera naming service.')
-    parser.set_defaults(generation=0, server=MAIN_SERVER, keys=None)
-    parser.add_argument('name', metavar='<name>', nargs='?', default='',
-                        help='node name (use _N suffix to set generation)')
-    parser.add_argument('-c', '--created', action='store_true', dest='created', default=False,
-                        help='show creation time of the names')
-    parser.add_argument('-d', '--dev', action='store_const', dest='server', const=DEV_SERVER,
-                        help='use the development naming server')
-    parser.add_argument('-k', '--keys', action='store_false', dest='keys',
-                        help='show detailed information including keys')
-    parser.add_argument('-K', '--all-keys', action='store_true', dest='keys',
-                        help='show detailed information including all current and past keys')
-    parser.add_argument('-l', '--list', action='store_true', dest='list', default=False,
-                        help='list the registered names')
-    parser.add_argument('-s', '--server', dest='server', help='naming server URL')
-    parser.add_argument('-S', '--similar', action='store_true', dest='similar', default=False,
-                        help='try to find a similar name, if the provided one is not found')
-    parser.add_argument('-t', '--at', dest='at', type=str_to_timestamp, default=None,
-                        help='get information at the specific date/time')
-    parser.add_argument('-w', '--newer', dest='newer', type=str_to_timestamp, default=None,
-                        help='show the names registered after the specific date/time')
     program_version = f'{PROGRAM_NAME} (moera-tools) {version("moera-tools")}'
-    parser.add_argument('-V', '--version', action='version', version=program_version)
-    args = cast(GlobalArgs, parser.parse_args())
+    options = docopt(OPTIONS_HELP, version=program_version)
 
-    if not args.list:
-        if args.name != '':
-            try:
-                (args.name, args.generation) = node_name_parse(args.name)
-            except ValueError as e:
-                error(str(e))
-        else:
-            parser.print_usage()
-            sys.exit(1)
-        if args.newer is not None:
-            error('-w/--newer can be used only with -l/--list')
-    else:
-        if args.keys is not None:
-            if args.keys:
-                error('-K/--all-keys cannot be used with -l/--list')
-            else:
-                error('-k/--keys cannot be used with -l/--list')
-        if args.similar:
-            error('-S/--similar cannot be used with -l/--list')
+    if options["<name>"] is not None:
+        try:
+            (args.name, args.generation) = node_name_parse(options["<name>"])
+        except ValueError as e:
+            error(str(e))
+
+    args.command = "resolve"
+    if options["--list"]:
+        args.command = "list"
+    if options["--add"]:
+        args.command = "add"
+
+    args.server = MAIN_SERVER
+    if options["--dev"]:
+        args.server = DEV_SERVER
+    if options["--server"] is not None:
+        args.server = options["--server"]
+
+    args.keys = None
+    if options["--keys"]:
+        args.keys = False
+    if options["--all-keys"]:
+        args.keys = True
+
+    args.created = options["--created"]
+    args.similar = options["--similar"]
+    args.at = str_to_timestamp(options["--at"])
+    args.newer = str_to_timestamp(options["--newer"])
 
 
-def str_to_timestamp(s: str) -> Timestamp:
+def str_to_timestamp(s: str | None) -> Timestamp | None:
+    if s is None:
+        return None
     return int(parse_date(s, fuzzy=True).timestamp())
 
 
@@ -156,13 +174,20 @@ def scan() -> None:
         page += 1
 
 
+def add_name() -> None:
+    pass
+
+
 def moname() -> None:
     try:
         parse_args()
-        if not args.list:
-            resolve()
-        else:
-            scan()
+        match args.command:
+            case 'resolve':
+                resolve()
+            case 'list':
+                scan()
+            case 'add':
+                add_name()
     except (MoeraNamingConnectionError, MoeraNamingError) as e:
         error(str(e))
     except (KeyboardInterrupt, BrokenPipeError):
