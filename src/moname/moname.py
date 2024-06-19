@@ -1,7 +1,7 @@
 import sys
 from base64 import b64encode
 from importlib.metadata import version
-from time import time, strftime, localtime
+from time import time, strftime, localtime, sleep
 from typing import NoReturn, Literal
 
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -196,7 +196,16 @@ def add_name() -> None:
     valid_from = int(time()) + 600
 
     srv = naming.MoeraNaming(args.server)
-    srv.put(args.name, args.generation, update_key_enc, args.uri, signing_key_enc, valid_from, None, None)
+    op_id = srv.put(args.name, args.generation, update_key_enc, args.uri, signing_key_enc, valid_from, None, None)
+
+    print("Request sent, waiting for the operation to complete...")
+    while True:
+        status = srv.get_status(op_id)
+        if status.status == "SUCCEEDED":
+            break
+        if status.status == "FAILED":
+            error("Operation failed: " + status.error_message)
+        sleep(3)
 
     print("Secret words:")
     mnemonic = Mnemonic().to_mnemonic(private_key_bytes(update_key))
