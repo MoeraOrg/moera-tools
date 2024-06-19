@@ -15,7 +15,7 @@ from moeralib.naming.types import RegisteredNameInfo, Timestamp, SigningKeyInfo
 PROGRAM_NAME = 'moname'
 PAGE_SIZE = 100
 
-OPTIONS_HELP = """
+OPTIONS_HELP = '''
 Query Moera naming service.
 
 usage:
@@ -44,13 +44,13 @@ options:
   -w NEWER, --newer NEWER
                         show the names registered after the specific date/time
   -V, --version         show program's version number and exit
-"""
+'''
 
 
 class GlobalArgs:
     name: str
     generation: int
-    command: Literal["resolve", "list", "add"]
+    command: Literal['resolve', 'list', 'add']
     server: str
     created: bool
     keys: bool | None
@@ -74,35 +74,35 @@ def parse_args() -> None:
     program_version = f'{PROGRAM_NAME} (moera-tools) {version("moera-tools")}'
     options = docopt(OPTIONS_HELP, version=program_version)
 
-    if options["<name>"] is not None:
+    if options['<name>'] is not None:
         try:
-            (args.name, args.generation) = node_name_parse(options["<name>"])
+            (args.name, args.generation) = node_name_parse(options['<name>'])
         except ValueError as e:
             error(str(e))
 
-    args.command = "resolve"
-    if options["--list"]:
-        args.command = "list"
-    if options["--add"]:
-        args.command = "add"
+    args.command = 'resolve'
+    if options['--list']:
+        args.command = 'list'
+    if options['--add']:
+        args.command = 'add'
 
     args.server = MAIN_SERVER
-    if options["--dev"]:
+    if options['--dev']:
         args.server = DEV_SERVER
-    if options["--server"] is not None:
-        args.server = options["--server"]
+    if options['--server'] is not None:
+        args.server = options['--server']
 
     args.keys = None
-    if options["--keys"]:
+    if options['--keys']:
         args.keys = False
-    if options["--all-keys"]:
+    if options['--all-keys']:
         args.keys = True
 
-    args.created = options["--created"]
-    args.similar = options["--similar"]
-    args.at = str_to_timestamp(options["--at"])
-    args.newer = str_to_timestamp(options["--newer"])
-    args.uri = options["<uri>"]
+    args.created = options['--created']
+    args.similar = options['--similar']
+    args.at = str_to_timestamp(options['--at'])
+    args.newer = str_to_timestamp(options['--newer'])
+    args.uri = options['<uri>']
 
 def str_to_timestamp(s: str | None) -> Timestamp | None:
     if s is None:
@@ -116,32 +116,32 @@ def timestamp_to_str(ts: Timestamp) -> str:
 
 def print_info(info: RegisteredNameInfo) -> None:
     if args.keys is not None:
-        print("name         : %s" % info.name)
-        print("generation   : %d" % info.generation)
-        print("node URI     : %s" % info.node_uri)
+        print('name         : %s' % info.name)
+        print('generation   : %d' % info.generation)
+        print('node URI     : %s' % info.node_uri)
         if info.digest is not None:
-            print("digest       : %s" % info.digest.hex())
+            print('digest       : %s' % info.digest.hex())
         if info.updating_key is not None:
-            print("updating key : %s" % info.updating_key.hex())
+            print('updating key : %s' % info.updating_key.hex())
         if info.created is not None:
-            print("created      : %s" % timestamp_to_str(info.created))
+            print('created      : %s' % timestamp_to_str(info.created))
         if args.keys is False:
             if info.signing_key is not None:
-                print("signing key  : %s" % info.signing_key.hex())
+                print('signing key  : %s' % info.signing_key.hex())
             if info.valid_from is not None:
-                print("valid from   : %s" % timestamp_to_str(info.valid_from))
+                print('valid from   : %s' % timestamp_to_str(info.valid_from))
     else:
         if args.created and info.created is not None:
             created = timestamp_to_str(info.created)
-            print("%s %s_%d\t%s" % (created, info.name, info.generation, info.node_uri))
+            print('%s %s_%d\t%s' % (created, info.name, info.generation, info.node_uri))
         else:
-            print("%s_%d\t%s" % (info.name, info.generation, info.node_uri))
+            print('%s_%d\t%s' % (info.name, info.generation, info.node_uri))
 
 
 def print_key(info: SigningKeyInfo) -> None:
     print()
-    print("signing key  : %s" % info.key.hex())
-    print("valid from   : %s" % timestamp_to_str(info.valid_from))
+    print('signing key  : %s' % info.key.hex())
+    print('valid from   : %s' % timestamp_to_str(info.valid_from))
 
 
 def resolve() -> None:
@@ -180,12 +180,12 @@ def scan() -> None:
 
 
 def private_key_bytes(key: ec.EllipticCurvePrivateKey) -> bytes:
-    return key.private_numbers().private_value.to_bytes(32, "big")
+    return key.private_numbers().private_value.to_bytes(32, 'big')
 
 
 def encode_public_key(key: ec.EllipticCurvePublicKey) -> str:
     numbers = key.public_numbers()
-    return b64encode(numbers.x.to_bytes(32, "big") + numbers.y.to_bytes(32, "big")).decode()
+    return b64encode(numbers.x.to_bytes(32, 'big') + numbers.y.to_bytes(32, 'big')).decode()
 
 
 def add_name() -> None:
@@ -198,22 +198,22 @@ def add_name() -> None:
     srv = naming.MoeraNaming(args.server)
     op_id = srv.put(args.name, args.generation, update_key_enc, args.uri, signing_key_enc, valid_from, None, None)
 
-    print("Request sent, waiting for the operation to complete...")
+    print('Request sent, waiting for the operation to complete...')
     while True:
         status = srv.get_status(op_id)
-        if status.status == "SUCCEEDED":
+        if status.status == 'SUCCEEDED':
             break
-        if status.status == "FAILED":
-            error("Operation failed: " + status.error_message)
+        if status.status == 'FAILED':
+            error('Operation failed: ' + status.error_message)
         sleep(3)
 
-    print("Secret words:")
+    print('Secret words:')
     mnemonic = Mnemonic().to_mnemonic(private_key_bytes(update_key))
     i = 1
-    for word in mnemonic.split(" "):
+    for word in mnemonic.split(' '):
         print(f'{i:2}. {word}')
         i += 1
-    print("Signing key: ", private_key_bytes(signing_key).hex())
+    print('Signing key: ', private_key_bytes(signing_key).hex())
 
 
 def moname() -> None:
