@@ -1,10 +1,13 @@
 import sys
+from base64 import b64encode
 from importlib.metadata import version
 from time import time, strftime, localtime
 from typing import NoReturn, Literal
 
+from cryptography.hazmat.primitives.asymmetric import ec
 from dateutil.parser import parse as parse_date
 from docopt import docopt
+from mnemonic import Mnemonic
 from moeralib import naming
 from moeralib.naming import MAIN_SERVER, DEV_SERVER, MoeraNamingConnectionError, MoeraNamingError, node_name_parse
 from moeralib.naming.types import RegisteredNameInfo, Timestamp, SigningKeyInfo
@@ -18,12 +21,13 @@ Query Moera naming service.
 usage:
   moname [--dev | --server SERVER] [--created] [--keys | --all-keys] [--similar] [--at AT] <name>
   moname --list [--dev | --server SERVER] [--created] [--at AT] [--newer NEWER] [<name>]
-  moname --add <name>
+  moname --add [--dev | --server SERVER] <name> <uri>
   moname --help
   moname --version
 
 positional arguments:
   <name>                node name (use _N suffix to set generation)
+  <uri>                 node URI
 
 options:
   -h, --help            show this help message and exit
@@ -53,6 +57,7 @@ class GlobalArgs:
     similar: bool
     at: Timestamp | None
     newer: Timestamp | None
+    uri: str
 
 
 args: GlobalArgs = GlobalArgs()
@@ -97,7 +102,7 @@ def parse_args() -> None:
     args.similar = options["--similar"]
     args.at = str_to_timestamp(options["--at"])
     args.newer = str_to_timestamp(options["--newer"])
-
+    args.uri = options["<uri>"]
 
 def str_to_timestamp(s: str | None) -> Timestamp | None:
     if s is None:
@@ -174,8 +179,32 @@ def scan() -> None:
         page += 1
 
 
+def private_key_bytes(key: ec.EllipticCurvePrivateKey) -> bytes:
+    return key.private_numbers().private_value.to_bytes(32, "big")
+
+
+def encode_public_key(key: ec.EllipticCurvePublicKey) -> str:
+    numbers = key.public_numbers()
+    return b64encode(numbers.x.to_bytes(32, "big") + numbers.y.to_bytes(32, "big")).decode()
+
+
 def add_name() -> None:
-    pass
+    update_key = ec.generate_private_key(ec.SECP256K1())
+    update_key_enc = encode_public_key(update_key.public_key())
+    signing_key = ec.generate_private_key(ec.SECP256K1())
+    signing_key_enc = encode_public_key(signing_key.public_key())
+    valid_from = int(time()) + 600
+
+    srv = naming.MoeraNaming(args.server)
+    srv.put(args.name, args.generation, update_key_enc, args.uri, signing_key_enc, valid_from, None, None)
+
+    print("Secret words:")
+    mnemonic = Mnemonic().to_mnemonic(private_key_bytes(update_key))
+    i = 1
+    for word in mnemonic.split(" "):
+        print(f'{i:2}. {word}')
+        i += 1
+    print("Signing key: ", private_key_bytes(signing_key).hex())
 
 
 def moname() -> None:

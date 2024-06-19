@@ -24,7 +24,9 @@ dependencies = [
     "python-dateutil",
     "PyYAML",
     "first",
-    "docopt"
+    "docopt",
+    "cryptography",
+    "mnemonic"
 ]
 
 [project.scripts]

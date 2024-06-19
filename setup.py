@@ -8,6 +8,8 @@ setup(
         'python-dateutil',
         'PyYAML',
         'first',
-        'docopt'
+        'docopt',
+        'cryptography~=42.0.4',
+        'mnemonic'
     ],
 )
