@@ -1,5 +1,6 @@
 import argparse
 import os.path
+import re
 import sys
 from configparser import ConfigParser
 from importlib.metadata import version
@@ -453,11 +454,13 @@ def name_assign(node: MoeraNode) -> None:
     secret = RegisteredNameSecret()
     secret.name = args.node_name
     secret.mnemonic = []
+    chop = re.compile(r'^[^a-zA-Z]*|[^a-zA-Z]*$')
     if sys.stdin.isatty():
         print('Enter 24 secret words:')
     for n in range(24):
         try:
-            secret.mnemonic.append(input())
+            word = chop.sub('', input())
+            secret.mnemonic.append(word)
         except EOFError:
             break
     if len(secret.mnemonic) != 24:
