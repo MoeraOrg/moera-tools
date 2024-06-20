@@ -26,7 +26,8 @@ dependencies = [
     "first",
     "docopt",
     "cryptography",
-    "mnemonic"
+    "mnemonic",
+    "ecpy"
 ]
 
 [project.scripts]

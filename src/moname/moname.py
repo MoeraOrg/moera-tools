@@ -7,6 +7,7 @@ from typing import NoReturn, Literal
 from cryptography.hazmat.primitives.asymmetric import ec
 from dateutil.parser import parse as parse_date
 from docopt import docopt
+from ecpy.curves import Curve
 from mnemonic import Mnemonic
 from moeralib import naming
 from moeralib.naming import MAIN_SERVER, DEV_SERVER, MoeraNamingConnectionError, MoeraNamingError, node_name_parse
@@ -189,7 +190,13 @@ def encode_public_key(key: ec.EllipticCurvePublicKey) -> str:
 
 
 def add_name() -> None:
-    update_key = ec.generate_private_key(ec.SECP256K1())
+    verbose = sys.stdout.isatty()
+
+    mnemo = Mnemonic()
+    mnemonic = mnemo.generate(strength=256)
+    seed = mnemo.to_seed(mnemonic)
+    update_key_private_value = int.from_bytes(seed, 'big') % Curve.get_curve('secp256k1').field
+    update_key = ec.derive_private_key(update_key_private_value, ec.SECP256K1())
     update_key_enc = encode_public_key(update_key.public_key())
     signing_key = ec.generate_private_key(ec.SECP256K1())
     signing_key_enc = encode_public_key(signing_key.public_key())
@@ -198,7 +205,8 @@ def add_name() -> None:
     srv = naming.MoeraNaming(args.server)
     op_id = srv.put(args.name, args.generation, update_key_enc, args.uri, signing_key_enc, valid_from, None, None)
 
-    print('Request sent, waiting for the operation to complete...')
+    if verbose:
+        print('Request sent, waiting for the operation to complete...')
     while True:
         status = srv.get_status(op_id)
         if status.status == 'SUCCEEDED':
@@ -207,13 +215,13 @@ def add_name() -> None:
             error('Operation failed: ' + status.error_message)
         sleep(3)
 
-    print('Secret words:')
-    mnemonic = Mnemonic().to_mnemonic(private_key_bytes(update_key))
+    if verbose:
+        print('Secret words:')
     i = 1
     for word in mnemonic.split(' '):
         print(f'{i:2}. {word}')
         i += 1
-    print('Signing key: ', private_key_bytes(signing_key).hex())
+    print(('Signing key: ' if verbose else '\n') + private_key_bytes(signing_key).hex())
 
 
 def moname() -> None:

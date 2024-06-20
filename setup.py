@@ -10,6 +10,7 @@ setup(
         'first',
         'docopt',
         'cryptography~=42.0.4',
-        'mnemonic'
+        'mnemonic',
+        'ecpy'
     ],
 )
