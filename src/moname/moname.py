@@ -12,7 +12,7 @@ from moeralib.naming import MAIN_SERVER, DEV_SERVER, MoeraNamingConnectionError,
 from moeralib.naming.types import RegisteredNameInfo, Timestamp, SigningKeyInfo
 
 from crypto import generate_mnemonic_key, generate_key, sign_fingerprint, mnemonic_to_private_key, raw_public_key
-from moname.fingerprints import create_put_call_fingerprint, PUT_CALL_FINGERPRINT_SCHEMA
+from moname.fingerprints import create_put_call_fingerprint
 
 PROGRAM_NAME = 'moname'
 PAGE_SIZE = 100
@@ -291,7 +291,7 @@ def update_name() -> None:
 
     fingerprint = create_put_call_fingerprint(args.name, args.generation, fp_updating_key, node_uri, fp_signing_key,
                                               fp_valid_from, info.digest)
-    signature = sign_fingerprint(fingerprint, PUT_CALL_FINGERPRINT_SCHEMA, prev_updating_key)
+    signature = sign_fingerprint(fingerprint, prev_updating_key)
     op_id = srv.put(args.name, args.generation, put_updating_key, node_uri, put_signing_key, put_valid_from,
                     info.digest, signature)
     wait_for_operation(srv, op_id, verbose_out)

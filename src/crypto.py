@@ -35,21 +35,19 @@ def fingerprint_bytes(fingerprint: Fingerprint, schema: FingerprintSchema) -> by
     return writer.to_bytes()
 
 
-def digest_fingerprint(fingerprint: Fingerprint, schema: FingerprintSchema) -> bytes:
+def digest_fingerprint(fingerprint: bytes) -> bytes:
     digest = hashes.Hash(hashes.SHA3_256())
-    digest.update(fingerprint_bytes(fingerprint, schema))
+    digest.update(fingerprint)
     return digest.finalize()
 
 
-def sign_fingerprint(fingerprint: Fingerprint, schema: FingerprintSchema,
-                     private_key: ec.EllipticCurvePrivateKey) -> bytes:
-    return private_key.sign(fingerprint_bytes(fingerprint, schema), ec.ECDSA(hashes.SHA3_256()))
+def sign_fingerprint(fingerprint: bytes, private_key: ec.EllipticCurvePrivateKey) -> bytes:
+    return private_key.sign(fingerprint, ec.ECDSA(hashes.SHA3_256()))
 
 
-def verify_fingerprint_signature(fingerprint: Fingerprint, schema: FingerprintSchema, signature: bytes,
-                                 public_key: ec.EllipticCurvePublicKey) -> bool:
+def verify_fingerprint_signature(fingerprint: bytes, signature: bytes, public_key: ec.EllipticCurvePublicKey) -> bool:
     try:
-        public_key.verify(signature, fingerprint_bytes(fingerprint, schema), ec.ECDSA(hashes.SHA3_256()))
+        public_key.verify(signature, fingerprint, ec.ECDSA(hashes.SHA3_256()))
         return True
     except InvalidSignature:
         return False

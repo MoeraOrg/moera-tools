@@ -1,4 +1,5 @@
-from fingerprint import FingerprintSchema, Fingerprint
+from crypto import fingerprint_bytes
+from fingerprint import FingerprintSchema
 
 PUT_CALL_FINGERPRINT_SCHEMA: FingerprintSchema = [
     ('version', 'number'),
@@ -13,5 +14,5 @@ PUT_CALL_FINGERPRINT_SCHEMA: FingerprintSchema = [
 
 
 def create_put_call_fingerprint(name: str, generation: int, updating_key: bytes, node_uri: str, signing_key: bytes,
-                                valid_from: int, previous_digest: bytes | None) -> Fingerprint:
-    return {'version': 0} | locals()
+                                valid_from: int, previous_digest: bytes | None) -> bytes:
+    return fingerprint_bytes({'version': 0} | locals(), PUT_CALL_FINGERPRINT_SCHEMA)
