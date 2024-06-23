@@ -9,8 +9,5 @@ setup(
         'PyYAML',
         'first',
         'docopt',
-        'cryptography~=42.0.4',
-        'mnemonic',
-        'ecpy'
     ],
 )

@@ -4,15 +4,14 @@ from importlib.metadata import version
 from time import time, strftime, localtime, sleep
 from typing import NoReturn, Literal
 
-from cryptography.hazmat.primitives.asymmetric import ec
 from dateutil.parser import parse as parse_date
 from docopt import docopt
 from moeralib import naming
+from moeralib.crypto import (generate_mnemonic_key, generate_key, sign_fingerprint, mnemonic_to_private_key,
+                             raw_public_key)
 from moeralib.naming import MAIN_SERVER, DEV_SERVER, MoeraNamingConnectionError, MoeraNamingError, node_name_parse
+from moeralib.naming.fingerprints import create_put_call_fingerprint0
 from moeralib.naming.types import RegisteredNameInfo, Timestamp, SigningKeyInfo
-
-from crypto import generate_mnemonic_key, generate_key, sign_fingerprint, mnemonic_to_private_key, raw_public_key
-from moname.fingerprints import create_put_call_fingerprint
 
 PROGRAM_NAME = 'moname'
 PAGE_SIZE = 100
@@ -212,8 +211,8 @@ def input_mnemonic(verbose: bool) -> str:
     return ' '.join(words)
 
 
-def private_key_bytes(key: ec.EllipticCurvePrivateKey) -> bytes:
-    return key.private_numbers().private_value.to_bytes(32, 'big')
+def private_key_bytes(private_key) -> bytes:
+    return private_key.private_numbers().private_value.to_bytes(32, 'big')
 
 
 def wait_for_operation(srv: naming.MoeraNaming, op_id: str, verbose: bool) -> None:
@@ -289,8 +288,8 @@ def update_name() -> None:
         fp_valid_from = int(time()) + 600
         put_valid_from = fp_valid_from
 
-    fingerprint = create_put_call_fingerprint(args.name, args.generation, fp_updating_key, node_uri, fp_signing_key,
-                                              fp_valid_from, info.digest)
+    fingerprint = create_put_call_fingerprint0(args.name, args.generation, fp_updating_key, node_uri, fp_signing_key,
+                                               fp_valid_from, info.digest)
     signature = sign_fingerprint(fingerprint, prev_updating_key)
     op_id = srv.put(args.name, args.generation, put_updating_key, node_uri, put_signing_key, put_valid_from,
                     info.digest, signature)
