@@ -1,5 +1,5 @@
+import re
 import sys
-from base64 import b64encode
 from importlib.metadata import version
 from time import time, strftime, localtime, sleep
 from typing import NoReturn, Literal
@@ -7,11 +7,12 @@ from typing import NoReturn, Literal
 from cryptography.hazmat.primitives.asymmetric import ec
 from dateutil.parser import parse as parse_date
 from docopt import docopt
-from ecpy.curves import Curve
-from mnemonic import Mnemonic
 from moeralib import naming
 from moeralib.naming import MAIN_SERVER, DEV_SERVER, MoeraNamingConnectionError, MoeraNamingError, node_name_parse
 from moeralib.naming.types import RegisteredNameInfo, Timestamp, SigningKeyInfo
+
+from crypto import generate_mnemonic_key, generate_key, sign_fingerprint, mnemonic_to_private_key, raw_public_key
+from moname.fingerprints import create_put_call_fingerprint, PUT_CALL_FINGERPRINT_SCHEMA
 
 PROGRAM_NAME = 'moname'
 PAGE_SIZE = 100
@@ -23,6 +24,7 @@ usage:
   moname [--dev | --server SERVER] [--created] [--keys | --all-keys] [--similar] [--at AT] <name>
   moname --list [--dev | --server SERVER] [--created] [--at AT] [--newer NEWER] [<name>]
   moname --add [--dev | --server SERVER] <name> <uri>
+  moname --update [--dev | --server SERVER] [--uri URI] [--signing-key] [--updating-key] <name>
   moname --help
   moname --version
 
@@ -35,6 +37,8 @@ options:
   -a, --add             register a new name
   -c, --created         show creation time of the names
   -d, --dev             use the development naming server
+  -g, --signing-key     generate a new signing key
+  -G, --updating-key    generate a new updating key
   -k, --keys            show detailed information including keys
   -K, --all-keys        show detailed information including all current and past keys
   -l, --list            list the registered names
@@ -42,6 +46,8 @@ options:
                         naming server URL
   -S, --similar         try to find a similar name, if the provided one is not found
   -t AT, --at AT        get information at the specific date/time
+  -u, --update          update an existing name
+  -U, --uri URI         a node URI to be set
   -w NEWER, --newer NEWER
                         show the names registered after the specific date/time
   -V, --version         show program's version number and exit
@@ -51,7 +57,7 @@ options:
 class GlobalArgs:
     name: str
     generation: int
-    command: Literal['resolve', 'list', 'add']
+    command: Literal['resolve', 'list', 'add', 'update']
     server: str
     created: bool
     keys: bool | None
@@ -59,6 +65,8 @@ class GlobalArgs:
     at: Timestamp | None
     newer: Timestamp | None
     uri: str
+    signing_key: bool
+    updating_key: bool
 
 
 args: GlobalArgs = GlobalArgs()
@@ -86,6 +94,8 @@ def parse_args() -> None:
         args.command = 'list'
     if options['--add']:
         args.command = 'add'
+    if options['--update']:
+        args.command = 'update'
 
     args.server = MAIN_SERVER
     if options['--dev']:
@@ -103,7 +113,13 @@ def parse_args() -> None:
     args.similar = options['--similar']
     args.at = str_to_timestamp(options['--at'])
     args.newer = str_to_timestamp(options['--newer'])
-    args.uri = options['<uri>']
+    if options['--uri'] is not None:
+        args.uri = options['--uri']
+    else:
+        args.uri = options['<uri>']
+    args.signing_key = options['--signing-key']
+    args.updating_key = options['--updating-key']
+
 
 def str_to_timestamp(s: str | None) -> Timestamp | None:
     if s is None:
@@ -180,31 +196,27 @@ def scan() -> None:
         page += 1
 
 
+def input_mnemonic(verbose: bool) -> str:
+    words = []
+    chop = re.compile(r'^[^a-zA-Z]*|[^a-zA-Z]*$')
+    if verbose:
+        print('Enter 24 secret words:')
+    for n in range(24):
+        try:
+            word = chop.sub('', input())
+            words.append(word)
+        except EOFError:
+            break
+    if len(words) != 24:
+        error('Wrong secret words')
+    return ' '.join(words)
+
+
 def private_key_bytes(key: ec.EllipticCurvePrivateKey) -> bytes:
     return key.private_numbers().private_value.to_bytes(32, 'big')
 
 
-def encode_public_key(key: ec.EllipticCurvePublicKey) -> str:
-    numbers = key.public_numbers()
-    return b64encode(numbers.x.to_bytes(32, 'big') + numbers.y.to_bytes(32, 'big')).decode()
-
-
-def add_name() -> None:
-    verbose = sys.stdout.isatty()
-
-    mnemo = Mnemonic()
-    mnemonic = mnemo.generate(strength=256)
-    seed = mnemo.to_seed(mnemonic)
-    update_key_private_value = int.from_bytes(seed, 'big') % Curve.get_curve('secp256k1').field
-    update_key = ec.derive_private_key(update_key_private_value, ec.SECP256K1())
-    update_key_enc = encode_public_key(update_key.public_key())
-    signing_key = ec.generate_private_key(ec.SECP256K1())
-    signing_key_enc = encode_public_key(signing_key.public_key())
-    valid_from = int(time()) + 600
-
-    srv = naming.MoeraNaming(args.server)
-    op_id = srv.put(args.name, args.generation, update_key_enc, args.uri, signing_key_enc, valid_from, None, None)
-
+def wait_for_operation(srv: naming.MoeraNaming, op_id: str, verbose: bool) -> None:
     if verbose:
         print('Request sent, waiting for the operation to complete...')
     while True:
@@ -215,13 +227,81 @@ def add_name() -> None:
             error('Operation failed: ' + status.error_message)
         sleep(3)
 
+
+def output_mnemonic(mnemonic, verbose):
     if verbose:
         print('Secret words:')
     i = 1
     for word in mnemonic.split(' '):
         print(f'{i:2}. {word}')
         i += 1
-    print(('Signing key: ' if verbose else '\n') + private_key_bytes(signing_key).hex())
+
+
+def output_signing_key(signing_key, verbose):
+    print(('Signing key: ' if verbose else '') + private_key_bytes(signing_key).hex())
+
+
+def add_name() -> None:
+    verbose = sys.stdout.isatty()
+
+    mnemonic, updating_key = generate_mnemonic_key()
+    put_updating_key = raw_public_key(updating_key.public_key())
+    signing_key = generate_key()
+    put_signing_key = raw_public_key(signing_key.public_key())
+    valid_from = int(time()) + 600
+
+    srv = naming.MoeraNaming(args.server)
+    op_id = srv.put(args.name, args.generation, put_updating_key, args.uri, put_signing_key, valid_from, None, None)
+    wait_for_operation(srv, op_id, verbose)
+
+    output_mnemonic(mnemonic, verbose)
+    print('\n')
+    output_signing_key(signing_key, verbose)
+
+
+def update_name() -> None:
+    verbose_in = sys.stdin.isatty()
+    verbose_out = sys.stdout.isatty()
+
+    srv = naming.MoeraNaming(args.server)
+    info = srv.get_current(args.name, args.generation)
+    if info is None:
+        error(f'Name {args.name}_{args.generation} is not found')
+
+    prev_updating_key = mnemonic_to_private_key(input_mnemonic(verbose_in))
+    node_uri = args.uri if args.uri is not None else info.node_uri
+    mnemonic = None
+    fp_updating_key = info.updating_key
+    put_updating_key = None
+    if args.updating_key:
+        mnemonic, updating_key = generate_mnemonic_key()
+        fp_updating_key = raw_public_key(updating_key.public_key())
+        put_updating_key = fp_updating_key
+    signing_key = None
+    fp_signing_key = info.signing_key
+    put_signing_key = None
+    fp_valid_from = info.valid_from
+    put_valid_from = None
+    if args.signing_key:
+        signing_key = generate_key()
+        fp_signing_key = raw_public_key(signing_key.public_key())
+        put_signing_key = fp_signing_key
+        fp_valid_from = int(time()) + 600
+        put_valid_from = fp_valid_from
+
+    fingerprint = create_put_call_fingerprint(args.name, args.generation, fp_updating_key, node_uri, fp_signing_key,
+                                              fp_valid_from, info.digest)
+    signature = sign_fingerprint(fingerprint, PUT_CALL_FINGERPRINT_SCHEMA, prev_updating_key)
+    op_id = srv.put(args.name, args.generation, put_updating_key, node_uri, put_signing_key, put_valid_from,
+                    info.digest, signature)
+    wait_for_operation(srv, op_id, verbose_out)
+
+    if mnemonic is not None:
+        output_mnemonic(mnemonic, verbose_out)
+    if signing_key is not None:
+        if mnemonic is not None:
+            print('\n')
+        output_signing_key(signing_key, verbose_out)
 
 
 def moname() -> None:
@@ -234,6 +314,8 @@ def moname() -> None:
                 scan()
             case 'add':
                 add_name()
+            case 'update':
+                update_name()
     except (MoeraNamingConnectionError, MoeraNamingError) as e:
         error(str(e))
     except (KeyboardInterrupt, BrokenPipeError):
