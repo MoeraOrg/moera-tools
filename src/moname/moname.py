@@ -254,7 +254,7 @@ def add_name() -> None:
     wait_for_operation(srv, op_id, verbose)
 
     output_mnemonic(mnemonic, verbose)
-    print('\n')
+    print()
     output_signing_key(signing_key, verbose)
 
 
@@ -299,7 +299,7 @@ def update_name() -> None:
         output_mnemonic(mnemonic, verbose_out)
     if signing_key is not None:
         if mnemonic is not None:
-            print('\n')
+            print()
         output_signing_key(signing_key, verbose_out)
 
 
