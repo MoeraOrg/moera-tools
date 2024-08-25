@@ -8,7 +8,7 @@ from dateutil.parser import parse as parse_date
 from docopt import docopt
 from moeralib import naming
 from moeralib.crypto import (generate_mnemonic_key, generate_key, sign_fingerprint, mnemonic_to_private_key,
-                             raw_public_key)
+                             raw_public_key, raw_private_key)
 from moeralib.naming import MAIN_SERVER, DEV_SERVER, MoeraNamingConnectionError, MoeraNamingError, node_name_parse
 from moeralib.naming.fingerprints import create_put_call_fingerprint0
 from moeralib.naming.types import RegisteredNameInfo, Timestamp, SigningKeyInfo
@@ -211,10 +211,6 @@ def input_mnemonic(verbose: bool) -> str:
     return ' '.join(words)
 
 
-def private_key_bytes(private_key) -> bytes:
-    return private_key.private_numbers().private_value.to_bytes(32, 'big')
-
-
 def wait_for_operation(srv: naming.MoeraNaming, op_id: str, verbose: bool) -> None:
     if verbose:
         print('Request sent, waiting for the operation to complete...')
@@ -237,7 +233,7 @@ def output_mnemonic(mnemonic, verbose):
 
 
 def output_signing_key(signing_key, verbose):
-    print(('Signing key: ' if verbose else '') + private_key_bytes(signing_key).hex())
+    print(('Signing key: ' if verbose else '') + raw_private_key(signing_key).hex())
 
 
 def add_name() -> None:
