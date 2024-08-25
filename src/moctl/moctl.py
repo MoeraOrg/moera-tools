@@ -13,7 +13,7 @@ from moeralib import naming
 from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeConnectionError, moera_root
 from moeralib.node.types import (
     Timestamp, DomainAttributes, DomainInfo, Credentials, ProfileAttributes, NameToRegister, RegisteredNameSecret,
-    TokenAttributes, TokenName, SettingMetaInfo, SettingInfo, SettingMetaAttributes
+    TokenAttributes, SettingMetaInfo, SettingInfo, SettingMetaAttributes, TokenUpdate
 )
 
 PROGRAM_NAME = 'moctl'
@@ -519,7 +519,7 @@ def token_create(node: MoeraNode) -> None:
 
 def token_rename(node: MoeraNode) -> None:
     setup_admin_auth(node)
-    tname = TokenName()
+    tname = TokenUpdate()
     tname.name = args.token_name
     info = node.update_token(args.id, tname)
     print(f'ID:\t{info.id}')

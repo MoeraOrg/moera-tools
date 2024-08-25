@@ -20,7 +20,7 @@ classifiers = [
     "Topic :: Utilities"
 ]
 dependencies = [
-    "moeralib~=0.15.4",
+    "moeralib~=0.15.5",
     "python-dateutil",
     "PyYAML",
     "first",
