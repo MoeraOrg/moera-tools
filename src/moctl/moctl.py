@@ -33,6 +33,7 @@ class GlobalArgs:
     node_name: str
     id: str
     token_name: str | None
+    permissions: str | None
     name: str
     description: bool
     defaults: bool
@@ -235,13 +236,17 @@ def parse_args() -> None:
     parser_token_create.add_argument('password', metavar='PASSWORD', help='the current password for authentication')
     parser_token_create.add_argument('-n', '--token-name', dest='token_name', metavar='NAME', default=None,
                                      help='token name')
+    parser_token_create.add_argument('-p', '--permissions', dest='permissions', metavar='PERMISSIONS', default=None,
+                                     help='comma-separated list of permissions')
 
-    parser_token_rename = subparsers_token.add_parser(
-        'rename', description='Rename a token.', help='rename a token')
-    parser_token_rename.set_defaults(routine=token_rename)
-    parser_token_rename.add_argument('id', metavar='ID', help='token ID')
-    parser_token_rename.add_argument('-n', '--token-name', dest='token_name', metavar='NAME', default=None,
+    parser_token_update = subparsers_token.add_parser(
+        'update', description='Update a token.', help="change token's name or permissions")
+    parser_token_update.set_defaults(routine=token_update)
+    parser_token_update.add_argument('id', metavar='ID', help='token ID')
+    parser_token_update.add_argument('-n', '--token-name', dest='token_name', metavar='NAME', default=None,
                                      help='token name')
+    parser_token_update.add_argument('-p', '--permissions', dest='permissions', metavar='PERMISSIONS', default=None,
+                                     help='comma-separated list of permissions')
 
     parser_token_delete = subparsers_token.add_parser(
         'delete', description='Delete a token.', help='delete a token')
@@ -510,22 +515,30 @@ def token_create(node: MoeraNode) -> None:
     attrs.login = 'admin'
     attrs.password = args.password
     attrs.name = args.token_name
+    if args.permissions is not None:
+        attrs.permissions = [p.strip() for p in args.permissions.split(',')]
     info = node.create_token(attrs)
     print(f'ID:\t{info.id}')
     print(f'token:\t{info.token}')
     if info.name is not None:
         print(f'name:\t{info.name}')
+    if info.permissions is not None:
+        print(f'permissions:\t{", ".join(info.permissions)}')
 
 
-def token_rename(node: MoeraNode) -> None:
+def token_update(node: MoeraNode) -> None:
     setup_admin_auth(node)
-    tname = TokenUpdate()
-    tname.name = args.token_name
-    info = node.update_token(args.id, tname)
+    update = TokenUpdate()
+    update.name = args.token_name
+    if args.permissions is not None:
+        update.permissions = [p.strip() for p in args.permissions.split(',')]
+    info = node.update_token(args.id, update)
     print(f'ID:\t{info.id}')
     print(f'token:\t{info.token}')
     if info.name is not None:
         print(f'name:\t{info.name}')
+    if info.permissions is not None:
+        print(f'permissions:\t{", ".join(info.permissions)}')
 
 
 def token_delete(node: MoeraNode) -> None:
