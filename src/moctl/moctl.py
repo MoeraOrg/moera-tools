@@ -13,15 +13,16 @@ from urllib.parse import urlparse
 import requests
 from first import first
 from moeralib import naming
-from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeConnectionError, moera_root
+from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeApiError, MoeraNodeConnectionError, moera_root
 from moeralib.node.types import (
     Timestamp, DomainAttributes, DomainInfo, Credentials, ProfileAttributes, NameToRegister, RegisteredNameSecret,
-    TokenAttributes, SettingMetaInfo, SettingInfo, SettingMetaAttributes, TokenUpdate
+    TokenAttributes, SettingMetaInfo, SettingInfo, SettingMetaAttributes, TokenUpdate, UserListItemAttributes
 )
 from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
 
 PROGRAM_NAME = 'moctl'
+MALWARE_LIST_NAME = 'malware'
 MOERA_NODE_SUPPORTS_VERIFY_SSL = 'verify_ssl' in signature(MoeraNode).parameters
 NAMING_RESOLVE_SUPPORTS_VERIFY_SSL = 'verify_ssl' in signature(naming.resolve).parameters
 
@@ -39,6 +40,7 @@ class GlobalArgs:
     password: str
     email: str
     node_name: str
+    malware_hash: str
     id: str
     token_name: str | None
     permissions: str | None
@@ -248,6 +250,28 @@ def parse_args() -> None:
     parser_name_delete = subparsers_name.add_parser(
         'delete', description='Delete node name information.', help='delete node name information')
     parser_name_delete.set_defaults(routine=name_delete)
+
+    # malware
+
+    parser_malware = subparsers.add_parser(
+        'malware', aliases=['mal'], description='Managing malware hashes.', help='manage malware hashes')
+    parser_malware.set_defaults(routine=lambda: routine_help(parser_malware))
+    subparsers_malware = parser_malware.add_subparsers(title='operations', required=True)
+
+    parser_malware_add = subparsers_malware.add_parser(
+        'add', description='Add a malware hash.', help='add a malware hash')
+    parser_malware_add.set_defaults(routine=malware_add)
+    parser_malware_add.add_argument('malware_hash', metavar='HASH', help='hash to add')
+
+    parser_malware_delete = subparsers_malware.add_parser(
+        'delete', description='Delete a malware hash.', help='delete a malware hash')
+    parser_malware_delete.set_defaults(routine=malware_delete)
+    parser_malware_delete.add_argument('malware_hash', metavar='HASH', help='hash to delete')
+
+    parser_malware_show = subparsers_malware.add_parser(
+        'show', description='Show malware hash info.', help='show malware hash info')
+    parser_malware_show.set_defaults(routine=malware_show)
+    parser_malware_show.add_argument('malware_hash', metavar='HASH', help='hash to show')
 
     # token
 
@@ -519,6 +543,28 @@ def name_assign(node: MoeraNode) -> None:
 def name_delete(node: MoeraNode) -> None:
     setup_admin_auth(node)
     node.delete_node_name()
+
+
+def malware_add(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    item = UserListItemAttributes()
+    item.node_name = args.malware_hash
+    node.create_user_list_item(MALWARE_LIST_NAME, item)
+
+
+def malware_delete(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    node.delete_user_list_item(MALWARE_LIST_NAME, args.malware_hash)
+
+
+def malware_show(node: MoeraNode) -> None:
+    try:
+        info = node.get_user_list_item(MALWARE_LIST_NAME, args.malware_hash)
+    except MoeraNodeApiError as e:
+        if e.error_code == 'not-found':
+            return
+        raise
+    print(f'{info.node_name}\t{timestamp_to_str(info.created_at)}')
 
 
 def token_list(node: MoeraNode) -> None:
