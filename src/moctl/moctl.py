@@ -3,11 +3,14 @@ import os.path
 import re
 import sys
 from configparser import ConfigParser
+from functools import wraps
 from importlib.metadata import version
+from inspect import signature
 from time import strftime, localtime
-from typing import Callable, cast, NoReturn, Sequence, List
+from typing import Any, Callable, cast, NoReturn, Sequence, List
 from urllib.parse import urlparse
 
+import requests
 from first import first
 from moeralib import naming
 from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeConnectionError, moera_root
@@ -15,8 +18,12 @@ from moeralib.node.types import (
     Timestamp, DomainAttributes, DomainInfo, Credentials, ProfileAttributes, NameToRegister, RegisteredNameSecret,
     TokenAttributes, SettingMetaInfo, SettingInfo, SettingMetaAttributes, TokenUpdate
 )
+from urllib3 import disable_warnings
+from urllib3.exceptions import InsecureRequestWarning
 
 PROGRAM_NAME = 'moctl'
+MOERA_NODE_SUPPORTS_VERIFY_SSL = 'verify_ssl' in signature(MoeraNode).parameters
+NAMING_RESOLVE_SUPPORTS_VERIFY_SSL = 'verify_ssl' in signature(naming.resolve).parameters
 
 
 class GlobalArgs:
@@ -24,6 +31,7 @@ class GlobalArgs:
     provider: str | None
     host_url: str | None
     host_name: str | None
+    insecure: bool
     root_secret: str | None
     token: str | None
     routine: Callable[[MoeraNode], None]
@@ -52,11 +60,36 @@ def error(s: str) -> NoReturn:
     sys.exit(1)
 
 
+def disable_ssl_verification() -> None:
+    if getattr(requests.sessions.Session.request, '__moctl_insecure__', False):
+        return
+
+    original_request = requests.sessions.Session.request
+
+    @wraps(original_request)
+    def insecure_request(self: requests.sessions.Session, method: str, url: str, **kwargs: Any):
+        kwargs.setdefault('verify', False)
+        return original_request(self, method, url, **kwargs)
+
+    setattr(insecure_request, '__moctl_insecure__', True)
+    requests.sessions.Session.request = insecure_request
+    disable_warnings(InsecureRequestWarning)
+
+
+def suppress_insecure_request_warning() -> None:
+    disable_warnings(InsecureRequestWarning)
+
+
 def resolve_host_name(naming_server: str) -> None:
     if args.host_name is None:
         error('Node name is not set')
     try:
-        args.host_url = naming.resolve(args.host_name, naming_server)
+        if NAMING_RESOLVE_SUPPORTS_VERIFY_SSL:
+            args.host_url = naming.resolve(args.host_name, naming_server, verify_ssl=not args.insecure)
+        else:
+            if args.insecure:
+                disable_ssl_verification()
+            args.host_url = naming.resolve(args.host_name, naming_server)
         if args.host_url is None:
             error(f'Node name not found: {args.host_name}')
     except ValueError as e:
@@ -123,6 +156,8 @@ def parse_args() -> None:
                         help='use the development naming server')
     group.add_argument('-H', '--host', dest='host_url', metavar='URL', default=None, help='node hostname/URL')
     group.add_argument('-N', '--name', dest='host_name', metavar='NAME', default=None, help='node name')
+    parser.add_argument('-k', '--insecure', action='store_true',
+                        help='disable SSL certificate verification')
     parser.add_argument('-s', '--naming-server', dest='naming_server', metavar='URL', help='naming server URL')
     parser.add_argument('-S', '--root-secret', dest='root_secret', metavar='SECRET', default=None,
                         help='root admin secret')
@@ -312,6 +347,9 @@ def parse_args() -> None:
 
     args = cast(GlobalArgs, parser.parse_args())
 
+    if args.insecure:
+        suppress_insecure_request_warning()
+
     configure_provider()
 
     if args.host_url is None and args.host_name is not None:
@@ -326,7 +364,12 @@ def routine_help(parser: argparse.ArgumentParser) -> None:
 
 
 def run() -> None:
-    node = MoeraNode(args.host_url)
+    if MOERA_NODE_SUPPORTS_VERIFY_SSL:
+        node = MoeraNode(args.host_url, verify_ssl=not args.insecure)
+    else:
+        if args.insecure:
+            disable_ssl_verification()
+        node = MoeraNode(args.host_url)
     args.routine(node)
 
 
