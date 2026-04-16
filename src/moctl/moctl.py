@@ -3,14 +3,11 @@ import os.path
 import re
 import sys
 from configparser import ConfigParser
-from functools import wraps
 from importlib.metadata import version
-from inspect import signature
 from time import strftime, localtime
-from typing import Any, Callable, cast, NoReturn, Sequence, List
+from typing import Callable, cast, NoReturn, Sequence, List
 from urllib.parse import urlparse
 
-import requests
 from first import first
 from moeralib import naming
 from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeApiError, MoeraNodeConnectionError, moera_root
@@ -23,8 +20,6 @@ from urllib3.exceptions import InsecureRequestWarning
 
 PROGRAM_NAME = 'moctl'
 MALWARE_LIST_NAME = 'malware'
-MOERA_NODE_SUPPORTS_VERIFY_SSL = 'verify_ssl' in signature(MoeraNode).parameters
-NAMING_RESOLVE_SUPPORTS_VERIFY_SSL = 'verify_ssl' in signature(naming.resolve).parameters
 
 
 class GlobalArgs:
@@ -62,22 +57,6 @@ def error(s: str) -> NoReturn:
     sys.exit(1)
 
 
-def disable_ssl_verification() -> None:
-    if getattr(requests.sessions.Session.request, '__moctl_insecure__', False):
-        return
-
-    original_request = requests.sessions.Session.request
-
-    @wraps(original_request)
-    def insecure_request(self: requests.sessions.Session, method: str, url: str, **kwargs: Any):
-        kwargs.setdefault('verify', False)
-        return original_request(self, method, url, **kwargs)
-
-    setattr(insecure_request, '__moctl_insecure__', True)
-    requests.sessions.Session.request = insecure_request
-    disable_warnings(InsecureRequestWarning)
-
-
 def suppress_insecure_request_warning() -> None:
     disable_warnings(InsecureRequestWarning)
 
@@ -86,12 +65,7 @@ def resolve_host_name(naming_server: str) -> None:
     if args.host_name is None:
         error('Node name is not set')
     try:
-        if NAMING_RESOLVE_SUPPORTS_VERIFY_SSL:
-            args.host_url = naming.resolve(args.host_name, naming_server, verify_ssl=not args.insecure)
-        else:
-            if args.insecure:
-                disable_ssl_verification()
-            args.host_url = naming.resolve(args.host_name, naming_server)
+        args.host_url = naming.resolve(args.host_name, naming_server, verify_ssl=not args.insecure)
         if args.host_url is None:
             error(f'Node name not found: {args.host_name}')
     except ValueError as e:
@@ -388,12 +362,7 @@ def routine_help(parser: argparse.ArgumentParser) -> None:
 
 
 def run() -> None:
-    if MOERA_NODE_SUPPORTS_VERIFY_SSL:
-        node = MoeraNode(args.host_url, verify_ssl=not args.insecure)
-    else:
-        if args.insecure:
-            disable_ssl_verification()
-        node = MoeraNode(args.host_url)
+    node = MoeraNode(args.host_url, verify_ssl=not args.insecure)
     args.routine(node)
 
 

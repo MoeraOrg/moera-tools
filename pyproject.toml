@@ -35,3 +35,6 @@ moctl = "moctl.moctl:moctl"
 "Homepage" = "https://github.com/MoeraOrg/moera-tools"
 "Bug Tracker" = "https://github.com/MoeraOrg/moera-issues/issues"
 "Overview" = "https://moera.org"
+#
+#[tool.uv.sources]
+#moeralib = { path = "../python-moeralib", editable = true }

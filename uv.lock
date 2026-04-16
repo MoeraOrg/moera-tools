@@ -361,7 +361,7 @@ dependencies = [
 requires-dist = [
     { name = "docopt", specifier = ">=0.6.2" },
     { name = "first", specifier = ">=2.0.2" },
-    { name = "moeralib", editable = "../python-moeralib" },
+    { name = "moeralib", specifier = "==0.18.3" },
     { name = "python-dateutil", specifier = ">=2.9.0" },
     { name = "pyyaml", specifier = ">=6.0.3" },
 ]
@@ -369,7 +369,7 @@ requires-dist = [
 [[package]]
 name = "moeralib"
 version = "0.18.3"
-source = { editable = "../python-moeralib" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "camel-converter" },
     { name = "cryptography" },
@@ -378,15 +378,9 @@ dependencies = [
     { name = "mnemonic" },
     { name = "requests" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "camel-converter", specifier = ">=5.1.0" },
-    { name = "cryptography", specifier = "~=46.0.7" },
-    { name = "ecpy", specifier = ">=1.2.5" },
-    { name = "jsonschema", specifier = ">=4.26.0" },
-    { name = "mnemonic", specifier = ">=0.21" },
-    { name = "requests", specifier = ">=2.33.1" },
+sdist = { url = "https://files.pythonhosted.org/packages/24/76/56e00f2aba7cf14aed145916b6509a59dcd9b694415c7eb67fc2c2791f01/moeralib-0.18.3.tar.gz", hash = "sha256:79524359d5ff72cfdcbd867b5698c93a85b732d9a7d2f895d2f1ffe542c5ab57", size = 108682, upload-time = "2026-04-16T01:30:51.959Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2d/1d/ceaebc653110c85b6f6b902716a69f90a61a61e86193b791dad405442873/moeralib-0.18.3-py3-none-any.whl", hash = "sha256:990be782f78dfa1a1d06652732ba3e94f0fd5a815b587c37b19740e59f0c0d77", size = 65558, upload-time = "2026-04-16T01:30:50.053Z" },
 ]
 
 [[package]]
