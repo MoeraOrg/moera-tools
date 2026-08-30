@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Utilities"
 ]
 dependencies = [
-    "moeralib==0.19.1",
+    "moeralib==0.19.2",
     "python-dateutil>=2.9.0",
     "PyYAML>=6.0.3",
     "first>=2.0.2",
@@ -37,9 +37,6 @@ moctl = "moctl.moctl:moctl"
 "Homepage" = "https://github.com/MoeraOrg/moera-tools"
 "Bug Tracker" = "https://github.com/MoeraOrg/moera-issues/issues"
 "Overview" = "https://moera.org"
-
-[tool.uv.sources]
-moeralib = { path = "../python-moeralib", editable = true }
 #
 #[tool.uv.sources]
 #moeralib = { path = "../python-moeralib", editable = true }

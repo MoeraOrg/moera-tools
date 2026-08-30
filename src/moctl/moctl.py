@@ -13,7 +13,8 @@ from moeralib import naming
 from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeApiError, MoeraNodeConnectionError, moera_root
 from moeralib.node.types import (
     Timestamp, DomainAttributes, DomainInfo, Credentials, ProfileAttributes, NameToRegister, RegisteredNameSecret,
-    Scope, TokenAttributes, SettingMetaInfo, SettingInfo, SettingMetaAttributes, TokenUpdate, UserListItemAttributes
+    Scope, SCOPE_VALUES, GrantChange, GrantInfo, TokenAttributes, SettingMetaInfo, SettingInfo, SettingMetaAttributes,
+    TokenUpdate, UserListItemAttributes, KeyMnemonic
 )
 from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
@@ -34,15 +35,18 @@ class GlobalArgs(argparse.Namespace):
     domain: str
     password: str
     email: str
+    full_name: str
     node_name: str
     malware_hash: str
     id: str
     token_name: str | None
     permissions: str | None
+    scopes: list[Scope]
     name: str
     description: bool
     defaults: bool
     modified: bool
+    store_words: bool
     type: bool
     prefix: str | None
     value: str
@@ -77,6 +81,14 @@ def naming_server_url(url: str | None) -> str:
     if url == 'dev' or url == 'development':
         return naming.DEV_SERVER
     return url
+
+
+def parse_scopes(value: str) -> list[Scope]:
+    scopes = [scope.strip() for scope in value.split(',')]
+    invalid_scope = first(scope for scope in scopes if scope not in SCOPE_VALUES)
+    if invalid_scope is not None:
+        raise argparse.ArgumentTypeError(f'invalid scope: {invalid_scope}')
+    return [cast(Scope, scope) for scope in scopes]
 
 
 def configure_provider() -> None:
@@ -154,6 +166,11 @@ def parse_args() -> None:
         'show', description='Show domain info.', help='show domain info')
     parser_domain_show.set_defaults(routine=domain_show)
 
+    parser_domain_available = subparsers_domain.add_parser(
+        'available', description='Find an available domain.', help='find an available domain')
+    parser_domain_available.set_defaults(routine=domain_available)
+    parser_domain_available.add_argument('node_name', metavar='NAME', help='node name')
+
     parser_domain_create = subparsers_domain.add_parser(
         'create', description='Create a domain.', help='create a domain')
     parser_domain_create.set_defaults(routine=domain_create)
@@ -175,6 +192,10 @@ def parse_args() -> None:
         'check', description='Check credentials.', help='check credentials')
     parser_credentials_check.set_defaults(routine=credentials_check)
 
+    parser_credentials_disable_login = subparsers_credentials.add_parser(
+        'disable-login', description='Disable login.', help='disable login')
+    parser_credentials_disable_login.set_defaults(routine=credentials_disable_login)
+
     parser_credentials_set_password = subparsers_credentials.add_parser(
         'set-password', description='Set password.', help='set password')
     parser_credentials_set_password.set_defaults(routine=credentials_set_password)
@@ -193,6 +214,22 @@ def parse_args() -> None:
     parser_credentials_set_email.set_defaults(routine=credentials_set_email)
     parser_credentials_set_email.add_argument('email', metavar='ADDRESS', help='e-mail address to set')
 
+    # profile
+
+    parser_profile = subparsers.add_parser(
+        'profile', aliases=['pr'], description='Managing profile.', help='manage profile')
+    parser_profile.set_defaults(routine=lambda: routine_help(parser_profile))
+    subparsers_profile = parser_profile.add_subparsers(title='operations', required=True)
+
+    parser_profile_get_full_name = subparsers_profile.add_parser(
+        'get-full-name', description='Get full name.', help='get full name')
+    parser_profile_get_full_name.set_defaults(routine=profile_get_full_name)
+
+    parser_profile_set_full_name = subparsers_profile.add_parser(
+        'set-full-name', description='Set full name.', help='set full name')
+    parser_profile_set_full_name.set_defaults(routine=profile_set_full_name)
+    parser_profile_set_full_name.add_argument('full_name', metavar='FULL_NAME', help='full name to set')
+
     # name
 
     parser_name = subparsers.add_parser(
@@ -208,9 +245,19 @@ def parse_args() -> None:
         'status', description='Show node name operation status.', help='show node name operation status')
     parser_name_status.set_defaults(routine=name_status)
 
+    parser_name_show_words = subparsers_name.add_parser(
+        'show-words', description='Show stored secret words.', help='show stored secret words')
+    parser_name_show_words.set_defaults(routine=name_show_words)
+
+    parser_name_delete_words = subparsers_name.add_parser(
+        'delete-words', description='Delete stored secret words.', help='delete stored secret words')
+    parser_name_delete_words.set_defaults(routine=name_delete_words)
+
     parser_name_register = subparsers_name.add_parser(
         'register', aliases=['reg'], description='Register node name.', help='register node name')
     parser_name_register.set_defaults(routine=name_register)
+    parser_name_register.add_argument('-w', '--store-words', dest='store_words', action='store_true',
+                                      help='store secret words on the node')
     parser_name_register.add_argument('node_name', metavar='NAME', help='name to register')
 
     parser_name_assign = subparsers_name.add_parser(
@@ -282,6 +329,36 @@ def parse_args() -> None:
         'delete', description='Delete a token.', help='delete a token')
     parser_token_delete.set_defaults(routine=token_delete)
     parser_token_delete.add_argument('id', metavar='ID', help='token ID')
+
+    # grant
+
+    parser_grant = subparsers.add_parser(
+        'grant', aliases=['gr'], description='Managing administrative grants.', help='manage grants')
+    parser_grant.set_defaults(routine=lambda: routine_help(parser_grant))
+    subparsers_grant = parser_grant.add_subparsers(title='operations', required=True)
+
+    parser_grant_list = subparsers_grant.add_parser(
+        'list', description='List all grants.', help='list all grants')
+    parser_grant_list.set_defaults(routine=grant_list)
+
+    parser_grant_show = subparsers_grant.add_parser(
+        'show', description='Show a grant.', help='show a grant')
+    parser_grant_show.set_defaults(routine=grant_show)
+    parser_grant_show.add_argument('node_name', metavar='NAME', help='node name')
+
+    parser_grant_grant = subparsers_grant.add_parser(
+        'grant', description='Grant permissions to a node.', help='grant permissions')
+    parser_grant_grant.set_defaults(routine=grant_grant)
+    parser_grant_grant.add_argument('node_name', metavar='NAME', help='node name')
+    parser_grant_grant.add_argument('scopes', metavar='SCOPE,...', type=parse_scopes,
+                                    help='comma-separated list of permissions')
+
+    parser_grant_revoke = subparsers_grant.add_parser(
+        'revoke', description='Revoke permissions from a node.', help='revoke permissions')
+    parser_grant_revoke.set_defaults(routine=grant_revoke)
+    parser_grant_revoke.add_argument('node_name', metavar='NAME', help='node name')
+    parser_grant_revoke.add_argument('scopes', metavar='SCOPE,...', type=parse_scopes,
+                                     help='comma-separated list of permissions')
 
     # option
 
@@ -415,6 +492,11 @@ def domain_list(node: MoeraNode) -> None:
         print(f'{domain.node_id}\t{domain.name}\t{timestamp_to_str(domain.created_at)}')
 
 
+def domain_available(node: MoeraNode) -> None:
+    info = node.is_domain_available(args.node_name)
+    print(info.name)
+
+
 def domain_create(node: MoeraNode) -> None:
     setup_root_admin_auth(node, optional=True)
     attrs = DomainAttributes()
@@ -429,10 +511,18 @@ def domain_delete(node: MoeraNode) -> None:
 
 def credentials_check(node: MoeraNode) -> None:
     info = node.check_credentials()
-    if info.created:
+    if info.login_disabled:
+        print('Login is disabled')
+    elif info.created:
         print('Credentials are set')
     else:
         print('Credentials are NOT set')
+
+
+def credentials_disable_login(node: MoeraNode) -> None:
+    credentials = Credentials()
+    credentials.login_disabled = True
+    node.create_credentials(credentials)
 
 
 def credentials_set_password(node: MoeraNode) -> None:
@@ -461,6 +551,19 @@ def credentials_set_email(node: MoeraNode) -> None:
     node.update_profile(profile)
 
 
+def profile_get_full_name(node: MoeraNode) -> None:
+    profile = node.get_profile()
+    if profile.full_name is not None:
+        print(profile.full_name)
+
+
+def profile_set_full_name(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    profile = ProfileAttributes()
+    profile.full_name = args.full_name
+    node.update_profile(profile)
+
+
 def name_show(node: MoeraNode) -> None:
     info = node.get_node_name()
     if info.name is not None:
@@ -481,16 +584,37 @@ def name_status(node: MoeraNode) -> None:
         print(f'error: {info.operation_error_message} ({info.operation_error_code})')
 
 
+def print_mnemonic(words: Sequence[str]) -> None:
+    for i, word in enumerate(words, start=1):
+        print(f'{i:2}. {word}')
+
+
+def name_show_words(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    print_mnemonic(node.get_stored_mnemonic().mnemonic)
+
+
+def name_delete_words(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    node.delete_stored_mnemonic()
+
+
 def name_register(node: MoeraNode) -> None:
     setup_admin_auth(node)
     reg = NameToRegister()
     reg.name = args.node_name
     info = node.create_node_name(reg)
     if info.mnemonic is not None:
-        i = 1
-        for word in info.mnemonic:
-            print(f'{i:2}. {word}')
-            i += 1
+        if args.store_words:
+            mnemonic = KeyMnemonic()
+            mnemonic.mnemonic = info.mnemonic
+            try:
+                node.store_mnemonic(mnemonic)
+            except (MoeraNodeError, MoeraNodeConnectionError):
+                print_mnemonic(info.mnemonic)
+                raise
+            return
+        print_mnemonic(info.mnemonic)
 
 
 def name_assign(node: MoeraNode) -> None:
@@ -606,6 +730,56 @@ def token_update(node: MoeraNode) -> None:
 def token_delete(node: MoeraNode) -> None:
     setup_admin_auth(node)
     node.delete_token(args.id)
+
+
+def print_grant(info: GrantInfo) -> None:
+    print(f'{info.node_name}\t{", ".join(info.scope)}')
+
+
+def grant_list(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    for info in node.get_all_grants():
+        print_grant(info)
+
+
+def expanded_node_name() -> str:
+    try:
+        node_name = naming.expand(args.node_name)
+    except ValueError as e:
+        error(str(e))
+    assert node_name is not None
+    return node_name
+
+
+def grant_show(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    try:
+        info = node.get_grant(expanded_node_name())
+    except MoeraNodeApiError as e:
+        if e.error_code == 'not-found':
+            return
+        raise
+    print_grant(info)
+
+
+def grant_grant(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    change = GrantChange()
+    change.scope = args.scopes
+    change.revoke = False
+    node.grant_or_revoke(expanded_node_name(), change)
+
+
+def grant_revoke(node: MoeraNode) -> None:
+    setup_admin_auth(node)
+    node_name = expanded_node_name()
+    if args.scopes == ['all']:
+        node.revoke_all(node_name)
+        return
+    change = GrantChange()
+    change.scope = args.scopes
+    change.revoke = True
+    node.grant_or_revoke(node_name, change)
 
 
 def get_default_options(metadata: Sequence[SettingMetaInfo]) -> list[SettingInfo]:

@@ -26,7 +26,7 @@ Query Moera naming service.
 
 usage:
   moname [--dev | --server SERVER] [--created] [--keys | --all-keys] [--similar] [--at AT] <name>
-  moname --list [--dev | --server SERVER] [--created] [--at AT] [--newer NEWER] [<name>]
+  moname --list [--dev | --server SERVER] [--created] [--at AT] [--newer NEWER] [--ignore-case] [<name>]
   moname --add [--dev | --server SERVER] <name> <uri>
   moname --update [--dev | --server SERVER] [--uri URI] [--signing-key] [--updating-key] <name>
   moname --help
@@ -43,6 +43,7 @@ options:
   -d, --dev             use the development naming server
   -g, --signing-key     generate a new signing key
   -G, --updating-key    generate a new updating key
+  -i, --ignore-case     ignore letter case when filtering names
   -k, --keys            show detailed information including keys
   -K, --all-keys        show detailed information including all current and past keys
   -l, --list            list the registered names
@@ -61,6 +62,7 @@ options:
 class GlobalArgs:
     name: str
     generation: int
+    generation_specified: bool
     command: Literal['resolve', 'list', 'add', 'update']
     server: str
     created: bool
@@ -71,6 +73,7 @@ class GlobalArgs:
     uri: str | None
     signing_key: bool
     updating_key: bool
+    ignore_case: bool
 
 
 args: GlobalArgs = GlobalArgs()
@@ -87,9 +90,11 @@ def parse_args() -> None:
     program_version = f'{PROGRAM_NAME} (moera-tools) {version("moera-tools")}'
     options = docopt(OPTIONS_HELP, version=program_version)
 
+    args.generation_specified = False
     if options['<name>'] is not None:
         try:
             (args.name, args.generation) = node_name_parse(options['<name>'])
+            args.generation_specified = re.search(r'_\d+$', options['<name>']) is not None
         except ValueError as e:
             error(str(e))
 
@@ -123,6 +128,7 @@ def parse_args() -> None:
         args.uri = options['<uri>']
     args.signing_key = options['--signing-key']
     args.updating_key = options['--updating-key']
+    args.ignore_case = options['--ignore-case']
 
 
 def str_to_timestamp(s: str | None) -> Timestamp | None:
@@ -188,6 +194,9 @@ def scan() -> None:
     srv = naming.MoeraNaming(args.server)
     page = 0
     at = args.at if args.at is not None else int(time())
+    name_filter = getattr(args, 'name', None)
+    if name_filter is not None and args.ignore_case:
+        name_filter = name_filter.casefold()
     while True:
         if args.newer is None:
             infos = srv.get_all(at, page, PAGE_SIZE)
@@ -196,6 +205,12 @@ def scan() -> None:
         if len(infos) == 0:
             break
         for info in infos:
+            if name_filter is not None:
+                name = info.name.casefold() if args.ignore_case else info.name
+                if not name.startswith(name_filter):
+                    continue
+                if args.generation_specified and info.generation != args.generation:
+                    continue
             print_info(info)
         page += 1
 
