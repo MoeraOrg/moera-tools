@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "moera-tools"
-version = "0.6.0"
+version = "0.7.0"
 authors = [
     {name = "Shmuel Leib Melamud", email = "balu@moera.org"},
 ]
@@ -12,7 +12,7 @@ description = "Tools for Moera administrators"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 keywords = ["Moera", "tools", "naming", "node", "administration", "provider"]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -21,11 +21,12 @@ classifiers = [
     "Topic :: Utilities"
 ]
 dependencies = [
-    "moeralib==0.18.3",
+    "moeralib==0.19.1",
     "python-dateutil>=2.9.0",
     "PyYAML>=6.0.3",
     "first>=2.0.2",
     "docopt>=0.6.2",
+    "urllib3>=2.7.0",
 ]
 
 [project.scripts]
@@ -36,6 +37,9 @@ moctl = "moctl.moctl:moctl"
 "Homepage" = "https://github.com/MoeraOrg/moera-tools"
 "Bug Tracker" = "https://github.com/MoeraOrg/moera-issues/issues"
 "Overview" = "https://moera.org"
+
+[tool.uv.sources]
+moeralib = { path = "../python-moeralib", editable = true }
 #
 #[tool.uv.sources]
 #moeralib = { path = "../python-moeralib", editable = true }

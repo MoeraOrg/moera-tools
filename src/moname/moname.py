@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import re
 import sys
 from importlib.metadata import version
 from time import time, strftime, localtime, sleep
-from typing import NoReturn, Literal
+from typing import TYPE_CHECKING, NoReturn, Literal
 
 from dateutil.parser import parse as parse_date
 from docopt import docopt
@@ -12,6 +14,9 @@ from moeralib.crypto import (generate_mnemonic_key, generate_key, sign_fingerpri
 from moeralib.naming import MAIN_SERVER, DEV_SERVER, MoeraNamingConnectionError, MoeraNamingError, node_name_parse
 from moeralib.naming.fingerprints import create_put_call_fingerprint0
 from moeralib.naming.types import RegisteredNameInfo, Timestamp, SigningKeyInfo
+
+if TYPE_CHECKING:
+    from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 
 PROGRAM_NAME = 'moname'
 PAGE_SIZE = 100
@@ -63,7 +68,7 @@ class GlobalArgs:
     similar: bool
     at: Timestamp | None
     newer: Timestamp | None
-    uri: str
+    uri: str | None
     signing_key: bool
     updating_key: bool
 
@@ -216,14 +221,17 @@ def wait_for_operation(srv: naming.MoeraNaming, op_id: str, verbose: bool) -> No
         print('Request sent, waiting for the operation to complete...')
     while True:
         status = srv.get_status(op_id)
+        if status is None:
+            error(f'Operation status not found: {op_id}')
         if status.status == 'SUCCEEDED':
             break
         if status.status == 'FAILED':
-            error('Operation failed: ' + status.error_message)
+            message = f': {status.error_message}' if status.error_message is not None else ''
+            error('Operation failed' + message)
         sleep(3)
 
 
-def output_mnemonic(mnemonic, verbose):
+def output_mnemonic(mnemonic: str, verbose: bool) -> None:
     if verbose:
         print('Secret words:')
     i = 1
@@ -232,7 +240,7 @@ def output_mnemonic(mnemonic, verbose):
         i += 1
 
 
-def output_signing_key(signing_key, verbose):
+def output_signing_key(signing_key: EllipticCurvePrivateKey, verbose: bool) -> None:
     print(('Signing key: ' if verbose else '') + raw_private_key(signing_key).hex())
 
 
@@ -265,24 +273,31 @@ def update_name() -> None:
 
     prev_updating_key = mnemonic_to_private_key(input_mnemonic(verbose_in))
     node_uri = args.uri if args.uri is not None else info.node_uri
-    mnemonic = None
+    mnemonic: str | None = None
     fp_updating_key = info.updating_key
     put_updating_key = None
     if args.updating_key:
         mnemonic, updating_key = generate_mnemonic_key()
         fp_updating_key = raw_public_key(updating_key.public_key())
         put_updating_key = fp_updating_key
-    signing_key = None
+    if fp_updating_key is None:
+        error('Updating key is not set')
+    signing_key: EllipticCurvePrivateKey | None = None
     fp_signing_key = info.signing_key
     put_signing_key = None
     fp_valid_from = info.valid_from
     put_valid_from = None
     if args.signing_key:
-        signing_key = generate_key()
-        fp_signing_key = raw_public_key(signing_key.public_key())
+        new_signing_key = generate_key()
+        signing_key = new_signing_key
+        fp_signing_key = raw_public_key(new_signing_key.public_key())
         put_signing_key = fp_signing_key
         fp_valid_from = int(time()) + 600
         put_valid_from = fp_valid_from
+    if fp_signing_key is None:
+        error('Signing key is not set')
+    if fp_valid_from is None:
+        error('Signing key validity timestamp is not set')
 
     fingerprint = create_put_call_fingerprint0(args.name, args.generation, fp_updating_key, node_uri, fp_signing_key,
                                                fp_valid_from, info.digest)

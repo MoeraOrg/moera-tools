@@ -5,7 +5,7 @@ import sys
 from configparser import ConfigParser
 from importlib.metadata import version
 from time import strftime, localtime
-from typing import Callable, cast, NoReturn, Sequence, List
+from typing import Callable, cast, NoReturn, Sequence
 from urllib.parse import urlparse
 
 from first import first
@@ -13,7 +13,7 @@ from moeralib import naming
 from moeralib.node import MoeraNode, MoeraNodeError, MoeraNodeApiError, MoeraNodeConnectionError, moera_root
 from moeralib.node.types import (
     Timestamp, DomainAttributes, DomainInfo, Credentials, ProfileAttributes, NameToRegister, RegisteredNameSecret,
-    TokenAttributes, SettingMetaInfo, SettingInfo, SettingMetaAttributes, TokenUpdate, UserListItemAttributes
+    Scope, TokenAttributes, SettingMetaInfo, SettingInfo, SettingMetaAttributes, TokenUpdate, UserListItemAttributes
 )
 from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
@@ -22,8 +22,8 @@ PROGRAM_NAME = 'moctl'
 MALWARE_LIST_NAME = 'malware'
 
 
-class GlobalArgs:
-    naming_server: str
+class GlobalArgs(argparse.Namespace):
+    naming_server: str | None
     provider: str | None
     host_url: str | None
     host_name: str | None
@@ -48,7 +48,6 @@ class GlobalArgs:
     value: str
 
 
-config: ConfigParser
 args: GlobalArgs
 
 
@@ -81,8 +80,6 @@ def naming_server_url(url: str | None) -> str:
 
 
 def configure_provider() -> None:
-    global config
-
     config = ConfigParser(default_section='default')
     config.read(os.path.expanduser("~/.moerc"))
 
@@ -343,7 +340,7 @@ def parse_args() -> None:
     parser_option_reset_privileged.set_defaults(routine=option_reset_privileged)
     parser_option_reset_privileged.add_argument('name', metavar='NAME', help='option name')
 
-    args = cast(GlobalArgs, parser.parse_args())
+    args = parser.parse_args(namespace=GlobalArgs())
 
     if args.insecure:
         suppress_insecure_request_warning()
@@ -351,6 +348,8 @@ def parse_args() -> None:
     configure_provider()
 
     if args.host_url is None and args.host_name is not None:
+        if args.naming_server is None:
+            error('Naming server is not set')
         resolve_host_name(args.naming_server)
     if args.host_url is None:
         error('host is not set')
@@ -363,6 +362,7 @@ def routine_help(parser: argparse.ArgumentParser) -> None:
 
 def run() -> None:
     node = MoeraNode(args.host_url, verify_ssl=not args.insecure)
+    node.user_agent('Moera tools/' + version('moera-tools'))
     args.routine(node)
 
 
@@ -401,7 +401,10 @@ def print_domain(domain: DomainInfo) -> None:
 
 def domain_show(node: MoeraNode) -> None:
     setup_root_admin_auth(node, optional=True)
-    domain_name = cast(str, urlparse(node.root).netloc).split(':')[0]
+    root = node.root
+    if root is None:
+        error('Node URL is not set')
+    domain_name = urlparse(root).netloc.split(':')[0]
     print_domain(node.get_domain(domain_name))
 
 
@@ -494,17 +497,18 @@ def name_assign(node: MoeraNode) -> None:
     setup_admin_auth(node)
     secret = RegisteredNameSecret()
     secret.name = args.node_name
-    secret.mnemonic = []
+    mnemonic: list[str] = []
+    secret.mnemonic = mnemonic
     chop = re.compile(r'^[^a-zA-Z]*|[^a-zA-Z]*$')
     if sys.stdin.isatty():
         print('Enter 24 secret words:')
     for n in range(24):
         try:
             word = chop.sub('', input())
-            secret.mnemonic.append(word)
+            mnemonic.append(word)
         except EOFError:
             break
-    if len(secret.mnemonic) != 24:
+    if len(mnemonic) != 24:
         error('Wrong secret words')
     node.update_node_name(secret)
 
@@ -574,7 +578,7 @@ def token_create(node: MoeraNode) -> None:
     attrs.password = args.password
     attrs.name = args.token_name
     if args.permissions is not None:
-        attrs.permissions = [p.strip() for p in args.permissions.split(',')]
+        attrs.permissions = [cast(Scope, permission.strip()) for permission in args.permissions.split(',')]
     info = node.create_token(attrs)
     print(f'ID:\t{info.id}')
     print(f'token:\t{info.token}')
@@ -589,7 +593,7 @@ def token_update(node: MoeraNode) -> None:
     update = TokenUpdate()
     update.name = args.token_name
     if args.permissions is not None:
-        update.permissions = [p.strip() for p in args.permissions.split(',')]
+        update.permissions = [cast(Scope, permission.strip()) for permission in args.permissions.split(',')]
     info = node.update_token(args.id, update)
     print(f'ID:\t{info.id}')
     print(f'token:\t{info.token}')
@@ -604,7 +608,7 @@ def token_delete(node: MoeraNode) -> None:
     node.delete_token(args.id)
 
 
-def get_default_options(metadata: Sequence[SettingMetaInfo]) -> List[SettingInfo]:
+def get_default_options(metadata: Sequence[SettingMetaInfo]) -> list[SettingInfo]:
     options = []
     for meta in metadata:
         if args.prefix is not None and not meta.name.startswith(args.prefix):
@@ -684,8 +688,10 @@ def option_reset(node: MoeraNode) -> None:
     node.update_settings([info])
 
 
-def get_option_metadata(node):
-    meta = first([m for m in node.get_node_settings_metadata(prefix=args.name) if m.name == args.name])
+def get_option_metadata(node: MoeraNode) -> SettingMetaInfo:
+    meta: SettingMetaInfo | None = first(
+        [m for m in node.get_node_settings_metadata(prefix=args.name) if m.name == args.name]
+    )
     if meta is None:
         error("Option not found: " + args.name)
     return meta
